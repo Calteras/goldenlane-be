@@ -1,0 +1,36 @@
+# Local development stack: PostgreSQL, the migrations, and the API.
+#   cp .env.example .env   (fill ADMIN_API_TOKEN, ENCRYPTION_KEY, FIREBASE_PROJECT_ID)
+#   docker compose up --build
+# Host ports can be moved if they clash with something else on your machine:
+#   DB_PORT=5434 APP_PORT=18081 docker compose up --build
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: streetfood
+    ports: ['127.0.0.1:${DB_PORT:-5433}:5432']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d streetfood']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build: { context: ., target: migration }
+    environment:
+      PG_URL: postgres://postgres:postgres@db:5432/streetfood?sslmode=disable
+    depends_on:
+      db: { condition: service_healthy }
+    restart: 'no'
+
+  app:
+    build: { context: ., target: production }
+    env_file: .env
+    environment:
+      PG_URL: postgres://postgres:postgres@db:5432/streetfood?sslmode=disable
+      HTTP_PORT: '8080'
+    ports: ['127.0.0.1:${APP_PORT:-18080}:8080']
+    depends_on:
+      migrate: { condition: service_completed_successfully }

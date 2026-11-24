@@ -1,0 +1,24 @@
+# Local settings: only the template is tracked.
+.env
+.env.*
+!.env.example
+secrets/
+.secrets/
+*.pem
+firebase-service-account.json
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+
+# Build output and tooling
+bin/
+tmp/
+*.test
+*.out
+coverage.txt
+.go/
+
+# Local sign-in helper output
+.dev-tokens/

@@ -1,0 +1,68 @@
+# Staging and production. Run it through scripts/compose.sh, which selects exactly one stage:
+#   sh scripts/compose.sh staging run --rm migrate
+#   sh scripts/compose.sh staging up -d app
+#
+# Secrets (database URL, admin token, encryption key) reach the containers as Docker secrets,
+# mounted read-only under /run/secrets and read by the app through ENV_FILE. They are never in
+# this file, in .env.<stage>, in the image, or in `docker inspect`. The non-secret settings come
+# from .env.<stage>. Use the same immutable image tags in staging and production.
+services:
+  app:
+    image: ${APP_IMAGE:?Set an immutable API image tag or digest in .env.<stage>}
+    pull_policy: always
+    init: true
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:?Select a stage with scripts/compose.sh}
+      ENV_FILE: /run/secrets/app_env
+      HTTP_PORT: '8080'
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      HTTP_CORS_ALLOW_ORIGINS: ${HTTP_CORS_ALLOW_ORIGINS:?Set the https browser origins}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:?Set the Firebase project}
+      POS_ALLOWED_HOSTS: ${POS_ALLOWED_HOSTS:?Set the POS hostnames}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?Set this API's public address}
+      PG_POOL_MAX: ${PG_POOL_MAX:-10}
+      INTEGRATION_WORKER_INTERVAL: ${INTEGRATION_WORKER_INTERVAL:-1s}
+      INTEGRATION_RECONCILE_INTERVAL: ${INTEGRATION_RECONCILE_INTERVAL:-15m}
+      FEE_CUSTOMER_BPS: ${FEE_CUSTOMER_BPS:-250}
+      FEE_MERCHANT_BPS: ${FEE_MERCHANT_BPS:-250}
+      PAYMENT_WINDOW: ${PAYMENT_WINDOW:-15m}
+      METRICS_ENABLED: ${METRICS_ENABLED:-true}
+    secrets:
+      - app_env
+    ports:
+      - '${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-18080}:8080'
+    # The image has its own health check (/healthcheck).
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    mem_limit: ${APP_MEMORY_LIMIT:-256m}
+    cpus: ${APP_CPUS:-1.0}
+    pids_limit: 200
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  migrate:
+    profiles: ['tools']
+    image: ${MIGRATION_IMAGE:?Set the matching migration image tag or digest in .env.<stage>}
+    pull_policy: always
+    init: true
+    restart: 'no'
+    environment:
+      APP_ENV: ${APP_ENV:?Select a stage with scripts/compose.sh}
+      ENV_FILE: /run/secrets/migration_env
+    secrets:
+      - migration_env
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+
+secrets:
+  app_env:
+    file: ${APP_SECRETS_PATH:?Set APP_SECRETS_PATH to a protected dotenv file}
+  migration_env:
+    file: ${MIGRATION_SECRETS_PATH:?Set MIGRATION_SECRETS_PATH to a database-only dotenv file}

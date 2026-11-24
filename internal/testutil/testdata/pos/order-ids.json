@@ -1,0 +1,14 @@
+{
+  "tenant": "17444833-d604-4337-85f1-3b24e2a8118f",
+  "owner": "29d51068-183a-4e0d-a715-5f6187ffca33",
+  "kiosk": "b68e42b3-f58e-43fc-92bb-35a8d5795c51",
+  "cashier": "aaf70937-a25c-4eef-a961-8b364b22e111",
+  "cat": "831afb29-cc3c-422b-9c1f-d9342bc78544",
+  "tea": "e56db68a-9a00-4f3d-bc22-2d6acc4b64d6",
+  "large": "aa425a78-8e40-4b7f-acef-28c471b6bfda",
+  "grp": "be941b30-1202-42e7-b1bc-d751272e275d",
+  "mod": "37c5601c-8ce3-4dd1-b023-7b6fa590a86c",
+  "okOrder": "mo_02c8dd72d46c445fba924895b0bb1ec5",
+  "rejectedOrder": "mo_e21f6e0a4d5e4222bebc984bc4205dde",
+  "cancelledOrder": "mo_1a6b7e9ef76f428389319006c75f0059"
+}

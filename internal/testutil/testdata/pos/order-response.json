@@ -1,0 +1,26 @@
+{
+  "message": "Success",
+  "code": 201,
+  "path": "/app/terrapos/integrations/streetfood/orders",
+  "data": {
+    "posOrderId": "d5a7f340-9882-4e99-b825-6680a9c881cf",
+    "platformOrderId": "sf_fixture_0001",
+    "status": "PENDING_ACCEPTANCE",
+    "pricing": {
+      "subtotalMinor": 700000,
+      "taxMinor": 77000,
+      "serviceMinor": 0,
+      "totalMinor": 777000
+    },
+    "acceptBy": "2026-11-18T15:17:34.569Z",
+    "prepTimeMinutes": null,
+    "reason": null,
+    "version": 1
+  },
+  "meta": {
+    "page": 1,
+    "size": 1,
+    "totalData": 1,
+    "totalPages": 1
+  }
+}

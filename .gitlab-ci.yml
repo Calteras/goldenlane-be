@@ -1,0 +1,43 @@
+# Test on every branch and merge request; build the images on main.
+stages: [test, build]
+
+variables:
+  GOPATH: $CI_PROJECT_DIR/.go
+
+lint:
+  stage: test
+  image: golangci/golangci-lint:v2.1
+  script: [golangci-lint run --timeout=10m]
+
+test:
+  stage: test
+  image: golang:1.24
+  services:
+    - name: postgres:17
+      alias: postgres
+  variables:
+    POSTGRES_USER: streetfood
+    POSTGRES_PASSWORD: streetfood
+    POSTGRES_DB: streetfood_test
+    TEST_PG_URL: postgresql://streetfood:streetfood@postgres:5432/streetfood_test?sslmode=disable
+  cache:
+    key: { files: [go.sum] }
+    paths: [.go/pkg/mod/]
+  script:
+    - go vet ./...
+    # One package at a time: the database tests share one database.
+    - go test -p 1 -race ./...
+
+images:
+  stage: build
+  image: docker:27
+  services: [docker:27-dind]
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - export TAG="$(echo "$CI_COMMIT_SHA" | cut -c1-12)"
+    - docker build --target production --build-arg APP_VERSION="$TAG" -t "$CI_REGISTRY_IMAGE/api:$TAG" .
+    - docker build --target migration -t "$CI_REGISTRY_IMAGE/migrate:$TAG" .
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker push "$CI_REGISTRY_IMAGE/api:$TAG"
+    - docker push "$CI_REGISTRY_IMAGE/migrate:$TAG"

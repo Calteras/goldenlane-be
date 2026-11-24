@@ -1,0 +1,574 @@
+openapi: 3.0.3
+info:
+  title: StreetFood customer API
+  version: 0.1.0
+  description: |
+    Discovery of street food vendors and kiosks, the customer's account, ordering, and online
+    payment with each merchant's own Xendit or Midtrans account.
+
+    **Sign-in.** Customers sign in with Firebase Authentication in the app and send the
+    Firebase ID token as `Authorization: Bearer <token>`. The API never sees passwords or
+    one-time codes. The first valid token creates the account.
+
+    **Envelope.** Every JSON answer is `{ "status": bool, "message": string, "data": any }`.
+    Errors add a machine-readable `code`.
+
+    **Times** are UTC (RFC 3339).
+
+    **Order statuses** are the POS's, plus `UNPAID` (waiting for an online payment) and `SUBMIT_FAILED`.
+    An online order carries `payment` (status, amount, page to open, refund) and `canPay`.
+
+    **Money** is an integer in minor units of 1/100 rupiah (Rp 5.000 is `500000`).
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: Discovery
+  - name: Account
+  - name: Orders
+  - name: Operator
+  - name: POS integration
+paths:
+  /v1/outlets/nearby:
+    get:
+      tags: [Discovery]
+      summary: Vendors and kiosks around a position, nearest first
+      description: |
+        Needs no sign-in. A mobile vendor appears only while its day is open and it shares
+        its position; a live position not refreshed for 10 minutes is left out and one older
+        than 3 minutes is flagged `stale`.
+      parameters:
+        - { name: lat, in: query, required: true, schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: lng, in: query, required: true, schema: { type: number, minimum: -180, maximum: 180 } }
+        - { name: radius_m, in: query, schema: { type: number, default: 2000, maximum: 50000 } }
+        - { name: open_now, in: query, schema: { type: boolean, default: false } }
+        - { name: q, in: query, description: Matches outlet, merchant or menu item names, schema: { type: string, maxLength: 80 } }
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 50 } }
+      responses:
+        '200':
+          description: Outlets
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          outlets: { type: array, items: { $ref: '#/components/schemas/Outlet' } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /v1/outlets/{id}:
+    get:
+      tags: [Discovery]
+      summary: One outlet
+      parameters: [{ $ref: '#/components/parameters/OutletId' }]
+      responses:
+        '200':
+          description: The outlet
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Outlet' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/outlets/{id}/menu:
+    get:
+      tags: [Discovery]
+      summary: The outlet's menu with variants, options and today's availability
+      description: The catalog exactly as the merchant's POS publishes it. Prices are minor units.
+      parameters: [{ $ref: '#/components/parameters/OutletId' }]
+      responses:
+        '200':
+          description: The menu
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          catalogVersion: { type: integer }
+                          fetchedAt: { type: string, format: date-time }
+                          menu: { $ref: '#/components/schemas/Menu' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/me:
+    get:
+      tags: [Account]
+      summary: The signed-in customer (created on first sign-in)
+      security: [{ firebase: [] }]
+      responses:
+        '200':
+          description: The customer
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Customer' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { description: The account is suspended or deleted (`ACCOUNT_UNAVAILABLE`) }
+    patch:
+      tags: [Account]
+      summary: Change name or avatar. The phone number comes from the verified sign-in and cannot be edited
+      security: [{ firebase: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 1, maxLength: 80 }
+                avatarUrl: { type: string, format: uri, description: https only }
+      responses:
+        '200': { description: The updated customer }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [Account]
+      summary: Close the account and erase personal data
+      security: [{ firebase: [] }]
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /v1/devices:
+    post:
+      tags: [Account]
+      summary: Register a push token (FCM)
+      security: [{ firebase: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platform, token]
+              properties:
+                platform: { type: string, enum: [ios, android, web] }
+                token: { type: string, maxLength: 4096 }
+      responses:
+        '204': { description: Registered }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /v1/checkouts:
+    post:
+      tags: [Orders]
+      summary: Place an order at one outlet. The POS prices it
+      description: |
+        Send a unique `Idempotency-Key` per attempt; repeating a key returns the same order
+        (`200` instead of `201`). `expectedTotalMinor` is optional: if the POS total differs,
+        the order is refused with `PRICE_CHANGED` and the current total. Limits: 5 open
+        orders and 20 checkouts per hour per customer.
+      security: [{ firebase: [] }]
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [outletId, items]
+              properties:
+                outletId: { type: string, format: uuid }
+                fulfillment:
+                  type: object
+                  properties:
+                    type: { type: string, default: PICKUP }
+                    label: { type: string, nullable: true }
+                notes: { type: string, nullable: true }
+                expectedTotalMinor: { type: integer, format: int64 }
+                payment:
+                  type: object
+                  properties:
+                    mode: { type: string, enum: [PAY_AT_PICKUP, ONLINE], default: PAY_AT_PICKUP }
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [productId, quantity]
+                    properties:
+                      productId: { type: string }
+                      variantId: { type: string, nullable: true }
+                      modifierIds: { type: array, items: { type: string } }
+                      quantity: { type: integer, minimum: 1 }
+                      notes: { type: string, nullable: true }
+      responses:
+        '200': { description: Same order as the earlier request with this key }
+        '201': { description: Order created. It reaches the POS within seconds }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { description: 'The merchant cannot be reached to price an online order (`MERCHANT_UNREACHABLE`)' }
+        '409': { description: 'Refused: `PRICE_CHANGED` (data has the new total), `OUTLET_CLOSED`, `OUTLET_UNAVAILABLE`, or `IDEMPOTENCY_CONFLICT` (key reused for a different order)' }
+        '422': { description: 'Items cannot be ordered as chosen (`ORDER_INVALID`, data.problems), the POS refused the order (reason code from the POS), or the merchant takes no online payment (`ONLINE_PAYMENT_UNAVAILABLE`)' }
+        '429': { description: Too many open orders or checkouts (`TOO_MANY_ORDERS`) }
+  /v1/orders:
+    get:
+      tags: [Orders]
+      summary: The customer's orders, newest first
+      security: [{ firebase: [] }]
+      parameters:
+        - { name: before, in: query, schema: { type: string }, description: Cursor from the previous page }
+        - { name: limit, in: query, schema: { type: integer } }
+      responses:
+        '200': { description: A page of orders }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /v1/orders/{id}:
+    get:
+      tags: [Orders]
+      summary: One order with its status, pricing and items
+      security: [{ firebase: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: The order }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/orders/{id}/cancel:
+    post:
+      tags: [Orders]
+      summary: Cancel an order that the merchant has not accepted yet
+      security: [{ firebase: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Cancelled (repeating is harmless) }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { description: Already accepted or finished (`CANNOT_CANCEL`) }
+  /v1/orders/{id}/stream:
+    get:
+      tags: [Orders]
+      summary: Server-sent events with the order's status as it changes
+      security: [{ firebase: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: text/event-stream; each event carries the full order }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/orders/{id}/review:
+    post:
+      tags: [Orders]
+      summary: Rate a completed order (once)
+      security: [{ firebase: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating]
+              properties:
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                comment: { type: string, nullable: true }
+      responses:
+        '201': { description: Review saved. The outlet's `rating` updates }
+        '409': { description: Already reviewed (`ALREADY_REVIEWED`) or the order is not completed }
+  /v1/outlets/{id}/reviews:
+    get:
+      tags: [Discovery]
+      summary: Reviews of an outlet, newest first
+      parameters:
+        - $ref: '#/components/parameters/OutletId'
+        - { name: before, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer } }
+      responses:
+        '200': { description: A page of reviews }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/admin/merchants:
+    get:
+      tags: [Operator]
+      summary: Registered merchants (never their secrets)
+      security: [{ operator: [] }]
+      responses:
+        '200': { description: Merchants }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Operator]
+      summary: Register a merchant from the link its owner created in the POS
+      description: |
+        The credentials are tested against the POS first; the secret is stored encrypted and
+        never returned. The merchant's outlets and menus are loaded right away.
+      security: [{ operator: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, posTenantId, keyId, secret, posBaseUrl]
+              properties:
+                name: { type: string }
+                posTenantId: { type: string }
+                keyId: { type: string, example: sfk_0123456789abcdef01234567 }
+                secret: { type: string, example: sfs_... }
+                posBaseUrl: { type: string, description: 'An origin on POS_ALLOWED_HOSTS, https', example: 'https://pos.example.com' }
+      responses:
+        '201': { description: Registered }
+        '409': { description: Already registered (`CONFLICT`) }
+        '422': { description: Invalid input (`MERCHANT_INVALID`) or the POS rejected the credentials (`LINK_UNVERIFIED`) }
+  /v1/admin/merchants/{id}:
+    delete:
+      tags: [Operator]
+      summary: Suspend a merchant; its outlets leave search
+      security: [{ operator: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        '204': { description: Suspended }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/orders/{id}/payment:
+    post:
+      tags: [Orders]
+      summary: Pay an unpaid order again after a failed or abandoned attempt
+      description: |
+        Opens a new payment attempt, or returns the open one. Only while the order is `UNPAID` and
+        before `paymentDeadline`. The previous page is closed when a new one is paid.
+      security: [{ firebase: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: 'The order, with the current `payment`' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { description: 'Paid, closed or past its deadline (`NOT_PAYABLE`)' }
+        '422': { description: 'The merchant no longer takes online payment (`ONLINE_PAYMENT_UNAVAILABLE`)' }
+  /v1/admin/merchants/{id}/gateway:
+    put:
+      tags: [Operator]
+      summary: Connect (or replace) a merchant's payment gateway account
+      description: |
+        The keys are checked against the gateway before they are saved, and are never shown again.
+        The answer carries `callbackUrl`: the merchant must enter it in the gateway's dashboard.
+      security: [{ operator: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider, secret]
+              properties:
+                provider: { type: string, enum: [XENDIT, MIDTRANS] }
+                secret: { type: string, description: Xendit secret API key or Midtrans server key }
+                callbackToken: { type: string, description: Required for Xendit (its callback verification token) }
+                sandbox: { type: boolean, description: Midtrans sandbox }
+      responses:
+        '200': { description: The gateway, without its keys }
+        '422': { description: 'Invalid (`GATEWAY_INVALID`) or the gateway rejected the keys (`GATEWAY_UNVERIFIED`)' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    get:
+      tags: [Operator]
+      summary: A merchant's gateway, without its keys
+      security: [{ operator: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        '200': { description: The gateway }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Operator]
+      summary: Stop new online payments for a merchant (open ones still finish)
+      security: [{ operator: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        '204': { description: Stopped }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/admin/merchants/{id}/fees:
+    get:
+      tags: [Operator]
+      summary: What a merchant owes the platform for completed online orders
+      description: |
+        Both fees of every order completed in [from, to), defaulting to this month: the 2.5% the
+        merchant owes on every order, and the 2.5% the customer paid on top of online orders.
+        `settledMinor` is what was already collected; `outstandingMinor` is what is owed now, from any period.
+      security: [{ operator: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: from, in: query, schema: { type: string }, description: 'Date (2026-11-01) or RFC 3339' }
+        - { name: to, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 'Totals and entries (`salesMinor`, `customerFeeMinor`, `merchantFeeMinor`, `totalOwedMinor`)' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/admin/merchants/{id}/fees/settle:
+    post:
+      tags: [Operator]
+      summary: Mark fees collected outside the subscription charge (invoiced by hand)
+      description: Settles fees created before `through` that are not set aside for a subscription charge in flight.
+      security: [{ operator: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [through, note]
+              properties:
+                through: { type: string, description: 'Date (2026-11-01) or RFC 3339' }
+                note: { type: string, maxLength: 300, description: How it was collected }
+      responses:
+        '200': { description: 'How many entries and how much (`entries`, `amountMinor`)' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/integrations/pos/fees/pending:
+    get:
+      tags: [POS integration]
+      summary: What the merchant owes the platform now (called by the POS)
+      description: Signed like events. Reserves nothing.
+      responses:
+        '200': { description: 'Lines and `totalMinor`' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /v1/integrations/pos/fees/reserve:
+    post:
+      tags: [POS integration]
+      summary: Set aside the fees of one billing period for the subscription charge (called by the POS)
+      description: Signed like events. The same `billingRef` always gets the same answer; a period already collected gets nothing more.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [billingRef]
+              properties:
+                billingRef: { type: string, maxLength: 200 }
+      responses:
+        '200': { description: 'Lines, `totalMinor`, `billingRef` and `collected`' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /v1/integrations/payments/{provider}/{gatewayId}:
+    post:
+      tags: [POS integration]
+      summary: Payment notification (called by Xendit or Midtrans, not by apps)
+      description: |
+        Authenticated with the gateway's callback token (Xendit) or signature (Midtrans). The body is
+        not trusted: the payment's real state is read from the gateway.
+      parameters:
+        - { name: provider, in: path, required: true, schema: { type: string, enum: [xendit, midtrans] } }
+        - { name: gatewayId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Handled (also for notifications about payments that are not ours) }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/integrations/pos/events:
+    post:
+      tags: [POS integration]
+      summary: Receive POS events (called by the POS, not by apps)
+      description: |
+        Signed with `X-SF-Key-Id`, `X-SF-Timestamp` and `X-SF-Signature`
+        (see the integration contract). Answers 204 once the batch is stored.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [events]
+              properties:
+                events: { type: array, minItems: 1, maxItems: 100, items: { type: object } }
+      responses:
+        '204': { description: Stored }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+components:
+  securitySchemes:
+    firebase: { type: http, scheme: bearer, bearerFormat: Firebase ID token }
+    operator: { type: http, scheme: bearer, description: ADMIN_API_TOKEN }
+  parameters:
+    OutletId: { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+  responses:
+    BadRequest: { description: Invalid input (`BAD_REQUEST`) }
+    Unauthorized: { description: Missing or invalid credentials (`UNAUTHORIZED`) }
+    NotFound: { description: Not found, or not listed (`NOT_FOUND`) }
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        status: { type: boolean }
+        message: { type: string }
+        data: {}
+        code: { type: string, description: Present on errors }
+    Customer:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        phone: { type: string, nullable: true }
+        name: { type: string }
+        avatarUrl: { type: string, nullable: true }
+        status: { type: string, enum: [active, suspended, deleted] }
+        createdAt: { type: string, format: date-time }
+    Location:
+      type: object
+      properties:
+        mode: { type: string, enum: [FIXED, LIVE, SPOT], description: 'FIXED: the address. LIVE: the vendor''s GPS. SPOT: the place the vendor chose, not its GPS' }
+        latitude: { type: number }
+        longitude: { type: number }
+        accuracyM: { type: number }
+        headingDeg: { type: number }
+        moving: { type: boolean }
+        recordedAt: { type: string, format: date-time }
+        stale: { type: boolean, description: 'Show "last seen" instead of a live dot' }
+    Hours:
+      type: object
+      properties:
+        dayOfWeek: { type: integer, minimum: 0, maximum: 6, description: 0 is Sunday }
+        opensAt: { type: string, example: '08:00' }
+        closesAt: { type: string, example: '17:00', description: Earlier than opensAt means after midnight }
+    Outlet:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        merchant: { type: string }
+        address: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        locationMode: { type: string, enum: [FIXED, MOBILE] }
+        location: { $ref: '#/components/schemas/Location' }
+        distanceMeters: { type: integer, description: Only in search results }
+        isOpenNow: { type: boolean }
+        acceptingOrders: { type: boolean }
+        acceptsOnlinePayment: { type: boolean, description: The merchant has a payment gateway; offer `payment.mode` ONLINE }
+        prepTimeMinutes: { type: integer }
+        timezone: { type: string }
+        hours: { type: array, items: { $ref: '#/components/schemas/Hours' } }
+        today:
+          type: object
+          nullable: true
+          description: A vendor's current working day
+          properties:
+            startedAt: { type: string, format: date-time }
+            spotName: { type: string, nullable: true }
+    Menu:
+      type: object
+      properties:
+        catalogVersion: { type: integer }
+        pricing: { type: object, properties: { taxRate: { type: number }, serviceChargeRate: { type: number } } }
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              name: { type: string }
+              products:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    name: { type: string }
+                    description: { type: string, nullable: true }
+                    imageUrl: { type: string, nullable: true }
+                    priceMinor: { type: integer, format: int64 }
+                    soldOut: { type: boolean }
+                    variants: { type: array, items: { type: object } }
+                    modifierGroups: { type: array, items: { type: object } }

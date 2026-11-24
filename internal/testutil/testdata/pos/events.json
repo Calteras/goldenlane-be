@@ -1,0 +1,220 @@
+[
+  {
+    "data": {
+      "outlet": {
+        "name": "Gerobak Keliling",
+        "hours": [],
+        "phone": "+62211234567",
+        "active": true,
+        "address": "Keliling Jakarta Selatan",
+        "latitude": null,
+        "outletId": "ddbcc079-3b24-4999-a356-52cadceb732f",
+        "timezone": "Asia/Jakarta",
+        "longitude": null,
+        "locationMode": "MOBILE",
+        "onlineStatus": "OPEN",
+        "pricingValid": true,
+        "stateVersion": 1,
+        "locationSharing": "LIVE",
+        "prepTimeMinutes": 15
+      }
+    },
+    "type": "outlet.updated",
+    "eventId": "088d1074-0d83-43d8-a5ee-0f4c5ce920d9",
+    "version": 1,
+    "outletId": "ddbcc079-3b24-4999-a356-52cadceb732f",
+    "occurredAt": "2026-11-18T15:12:34.509Z"
+  },
+  {
+    "data": {},
+    "type": "catalog.changed",
+    "eventId": "24c3a341-423c-4f98-aaaf-d7dd119fde96",
+    "version": 1,
+    "outletId": "ddbcc079-3b24-4999-a356-52cadceb732f",
+    "occurredAt": "2026-11-18T15:12:34.510Z"
+  },
+  {
+    "data": {
+      "outlet": {
+        "name": "Kios Melati",
+        "hours": [
+          {
+            "opensAt": "08:00",
+            "closesAt": "17:00",
+            "dayOfWeek": 1
+          },
+          {
+            "opensAt": "18:00",
+            "closesAt": "02:00",
+            "dayOfWeek": 5
+          }
+        ],
+        "phone": null,
+        "active": true,
+        "address": "Jl. Melati 3",
+        "latitude": -6.25,
+        "outletId": "f44f6406-408b-4d82-a0ab-08223f600b33",
+        "timezone": "Asia/Jakarta",
+        "longitude": 106.85,
+        "locationMode": "FIXED",
+        "onlineStatus": "AUTO",
+        "pricingValid": true,
+        "stateVersion": 1,
+        "locationSharing": "LIVE",
+        "prepTimeMinutes": 15
+      }
+    },
+    "type": "outlet.updated",
+    "eventId": "2bb5c95b-f700-4059-b422-235467e22304",
+    "version": 1,
+    "outletId": "f44f6406-408b-4d82-a0ab-08223f600b33",
+    "occurredAt": "2026-11-18T15:12:34.521Z"
+  },
+  {
+    "data": {},
+    "type": "catalog.changed",
+    "eventId": "7ab9728b-9f3b-4a82-a3d8-66dcdfc7af54",
+    "version": 1,
+    "outletId": "f44f6406-408b-4d82-a0ab-08223f600b33",
+    "occurredAt": "2026-11-18T15:12:34.522Z"
+  },
+  {
+    "data": {
+      "spot": {
+        "id": "ecf988d0-9e24-4e6f-aadd-3cad0345f123",
+        "name": "Pasar Minggu",
+        "latitude": -6.2,
+        "longitude": 106.8
+      },
+      "active": true,
+      "endedAt": null,
+      "sharing": "LIVE",
+      "sessionId": "1bce8a07-9c05-4703-bfb5-0cc3dee17529",
+      "startedAt": "2026-11-18T15:12:34.529Z"
+    },
+    "type": "outlet.session.changed",
+    "eventId": "9d14308c-4fdf-473d-8ac9-79e1ca2185e2",
+    "version": 0,
+    "outletId": "ddbcc079-3b24-4999-a356-52cadceb732f",
+    "occurredAt": "2026-11-18T15:12:34.531Z"
+  },
+  {
+    "data": {
+      "spot": {
+        "id": "ecf988d0-9e24-4e6f-aadd-3cad0345f123",
+        "name": "Pasar Minggu",
+        "latitude": -6.2,
+        "longitude": 106.8
+      },
+      "active": true,
+      "endedAt": null,
+      "sharing": "SPOT",
+      "sessionId": "1bce8a07-9c05-4703-bfb5-0cc3dee17529",
+      "startedAt": "2026-11-18T15:12:34.529Z"
+    },
+    "type": "outlet.session.changed",
+    "eventId": "90ec9f89-9a05-4cfc-92aa-e2054e0a5351",
+    "version": 0,
+    "outletId": "ddbcc079-3b24-4999-a356-52cadceb732f",
+    "occurredAt": "2026-11-18T15:12:34.546Z"
+  },
+  {
+    "data": {
+      "spot": {
+        "id": "ecf988d0-9e24-4e6f-aadd-3cad0345f123",
+        "name": "Pasar Minggu",
+        "latitude": -6.2,
+        "longitude": 106.8
+      },
+      "active": true,
+      "endedAt": null,
+      "sharing": "LIVE",
+      "sessionId": "1bce8a07-9c05-4703-bfb5-0cc3dee17529",
+      "startedAt": "2026-11-18T15:12:34.529Z"
+    },
+    "type": "outlet.session.changed",
+    "eventId": "dff94b77-fde6-4e5f-bc56-7d3559bdd3dd",
+    "version": 0,
+    "outletId": "ddbcc079-3b24-4999-a356-52cadceb732f",
+    "occurredAt": "2026-11-18T15:12:34.552Z"
+  },
+  {
+    "data": {
+      "mode": "LIVE",
+      "moving": true,
+      "latitude": -6.2003,
+      "speedMps": 1.4,
+      "accuracyM": 8,
+      "longitude": 106.8,
+      "sessionId": "1bce8a07-9c05-4703-bfb5-0cc3dee17529",
+      "headingDeg": 90,
+      "recordedAt": "2026-11-18T15:12:36.534Z"
+    },
+    "type": "outlet.location.updated",
+    "eventId": "5298f1c3-6671-46de-8652-4afb3594edea",
+    "version": 0,
+    "outletId": "ddbcc079-3b24-4999-a356-52cadceb732f",
+    "occurredAt": "2026-11-18T15:12:34.553Z"
+  },
+  {
+    "data": {},
+    "type": "outlet.unpublished",
+    "eventId": "b4b7a3aa-4981-413e-aa5d-b98793588198",
+    "version": 2,
+    "outletId": "f44f6406-408b-4d82-a0ab-08223f600b33",
+    "occurredAt": "2026-11-18T15:12:34.557Z"
+  },
+  {
+    "data": {
+      "reason": null,
+      "status": "ACCEPTED",
+      "occurredAt": "2026-11-18T15:12:34.579Z",
+      "posOrderId": "d5a7f340-9882-4e99-b825-6680a9c881cf",
+      "platformOrderId": "sf_fixture_0001",
+      "prepTimeMinutes": 15
+    },
+    "type": "order.status.changed",
+    "eventId": "51eec204-5ed1-4cb3-a419-e50bcdb16850",
+    "version": 2,
+    "outletId": "ddbcc079-3b24-4999-a356-52cadceb732f",
+    "occurredAt": "2026-11-18T15:12:34.581Z"
+  },
+  {
+    "data": {
+      "spot": {
+        "id": "ecf988d0-9e24-4e6f-aadd-3cad0345f123",
+        "name": "Pasar Minggu",
+        "latitude": -6.2,
+        "longitude": 106.8
+      },
+      "active": false,
+      "endedAt": "2026-11-18T15:12:34.585Z",
+      "sharing": "LIVE",
+      "sessionId": "1bce8a07-9c05-4703-bfb5-0cc3dee17529",
+      "startedAt": "2026-11-18T15:12:34.529Z"
+    },
+    "type": "outlet.session.changed",
+    "eventId": "a6790d48-1d2c-49cc-b230-d0d0294b60be",
+    "version": 0,
+    "outletId": "ddbcc079-3b24-4999-a356-52cadceb732f",
+    "occurredAt": "2026-11-18T15:12:34.587Z"
+  },
+  {
+    "data": {
+      "reason": "SESSION_ENDED"
+    },
+    "type": "outlet.location.cleared",
+    "eventId": "70a4ddc4-563f-4f62-82f9-0c5c7eec9e45",
+    "version": 0,
+    "outletId": "ddbcc079-3b24-4999-a356-52cadceb732f",
+    "occurredAt": "2026-11-18T15:12:34.588Z"
+  },
+  {
+    "data": {},
+    "type": "link.revoked",
+    "eventId": "d03b5b99-4d36-4d60-b19f-a5afce1879d4",
+    "version": 0,
+    "outletId": null,
+    "occurredAt": "2026-11-18T15:12:34.592Z"
+  }
+]

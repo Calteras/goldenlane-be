@@ -1,0 +1,29 @@
+# Allowlist: local settings, credentials, Git history and documents never enter builds.
+**
+!go.mod
+!go.sum
+!.air.toml
+!cmd/
+!cmd/**
+!config/
+!config/**
+!docs/
+!docs/**
+!internal/
+!internal/**
+!migrations/
+!migrations/**
+!pkg/
+!pkg/**
+!integration-test/
+!integration-test/**
+# Defense in depth for files nested in source directories.
+**/.env
+**/.env.*
+**/secrets/**
+**/.secrets/**
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/firebase-service-account.json

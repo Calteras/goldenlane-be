@@ -1,0 +1,314 @@
+{
+  "submit-ok": {
+    "status": 201,
+    "body": {
+      "message": "Success",
+      "code": 201,
+      "path": "/app/terrapos/integrations/streetfood/orders",
+      "data": {
+        "posOrderId": "3e2b58ee-028d-4b1d-8d4e-d731f10f5bba",
+        "platformOrderId": "mo_02c8dd72d46c445fba924895b0bb1ec5",
+        "status": "PENDING_ACCEPTANCE",
+        "pricing": {
+          "subtotalMinor": 1400000,
+          "taxMinor": 154000,
+          "serviceMinor": 0,
+          "totalMinor": 1554000
+        },
+        "acceptBy": "2026-11-21T03:22:34.954Z",
+        "prepTimeMinutes": null,
+        "reason": null,
+        "version": 1
+      },
+      "meta": {
+        "page": 1,
+        "size": 1,
+        "totalData": 1,
+        "totalPages": 1
+      }
+    }
+  },
+  "submit-replay": {
+    "status": 200,
+    "body": {
+      "message": "Success",
+      "code": 200,
+      "path": "/app/terrapos/integrations/streetfood/orders",
+      "data": {
+        "posOrderId": "3e2b58ee-028d-4b1d-8d4e-d731f10f5bba",
+        "platformOrderId": "mo_02c8dd72d46c445fba924895b0bb1ec5",
+        "status": "PENDING_ACCEPTANCE",
+        "pricing": {
+          "subtotalMinor": 1400000,
+          "taxMinor": 154000,
+          "serviceMinor": 0,
+          "totalMinor": 1554000
+        },
+        "acceptBy": "2026-11-21T03:22:34.954Z",
+        "prepTimeMinutes": null,
+        "reason": null,
+        "version": 1
+      },
+      "meta": {
+        "page": 1,
+        "size": 1,
+        "totalData": 1,
+        "totalPages": 1
+      }
+    }
+  },
+  "submit-conflict": {
+    "status": 409,
+    "body": {
+      "statusCode": 409,
+      "path": "/app/terrapos/integrations/streetfood/orders",
+      "message": "This order id was already used with different contents.",
+      "code": "IDEMPOTENCY_CONFLICT",
+      "data": {
+        "error": "Error",
+        "statusCode": 409
+      },
+      "meta": {
+        "page": 1,
+        "size": 0,
+        "totalData": 0,
+        "totalPages": 0
+      }
+    }
+  },
+  "submit-price-changed": {
+    "status": 409,
+    "body": {
+      "statusCode": 409,
+      "path": "/app/terrapos/integrations/streetfood/orders",
+      "message": "Prices have changed. Please review the order.",
+      "code": "PRICE_CHANGED",
+      "data": {
+        "error": "Error",
+        "statusCode": 409,
+        "totalMinor": 1554000
+      },
+      "meta": {
+        "page": 1,
+        "size": 0,
+        "totalData": 0,
+        "totalPages": 0
+      }
+    }
+  },
+  "submit-invalid": {
+    "status": 422,
+    "body": {
+      "statusCode": 422,
+      "path": "/app/terrapos/integrations/streetfood/orders",
+      "message": "Some items are no longer available as chosen.",
+      "code": "ORDER_INVALID",
+      "data": {
+        "error": "Error",
+        "statusCode": 422,
+        "problems": [
+          {
+            "line": 0,
+            "code": "PRODUCT_UNAVAILABLE"
+          },
+          {
+            "line": 1,
+            "code": "OPTION_SELECTION",
+            "group": "Gula",
+            "min": 1,
+            "max": 1
+          }
+        ]
+      },
+      "meta": {
+        "page": 1,
+        "size": 0,
+        "totalData": 0,
+        "totalPages": 0
+      }
+    }
+  },
+  "submit-unknown-outlet": {
+    "status": 404,
+    "body": {
+      "statusCode": 404,
+      "path": "/app/terrapos/integrations/streetfood/orders",
+      "message": "This outlet is not available.",
+      "code": "OUTLET_UNAVAILABLE",
+      "data": {
+        "error": "Error",
+        "statusCode": 404
+      },
+      "meta": {
+        "page": 1,
+        "size": 0,
+        "totalData": 0,
+        "totalPages": 0
+      }
+    }
+  },
+  "submit-bad-body": {
+    "status": 400,
+    "body": {
+      "statusCode": 400,
+      "path": "/app/terrapos/integrations/streetfood/orders",
+      "message": "platformOrderId must match /^[A-Za-z0-9_-]{6,64}$/ regular expression, outletId must be a UUID, items must contain no more than 30 elements, items must contain at least 1 elements, items must be an array",
+      "data": {
+        "error": "Bad Request",
+        "statusCode": 400
+      },
+      "meta": {
+        "page": 1,
+        "size": 0,
+        "totalData": 0,
+        "totalPages": 0
+      }
+    }
+  },
+  "status": {
+    "status": 200,
+    "body": {
+      "message": "Success",
+      "code": 200,
+      "path": "/app/terrapos/integrations/streetfood/orders/mo_02c8dd72d46c445fba924895b0bb1ec5",
+      "data": {
+        "posOrderId": "3e2b58ee-028d-4b1d-8d4e-d731f10f5bba",
+        "platformOrderId": "mo_02c8dd72d46c445fba924895b0bb1ec5",
+        "status": "PENDING_ACCEPTANCE",
+        "pricing": {
+          "subtotalMinor": 1400000,
+          "taxMinor": 154000,
+          "serviceMinor": 0,
+          "totalMinor": 1554000
+        },
+        "acceptBy": "2026-11-21T03:22:34.954Z",
+        "prepTimeMinutes": null,
+        "reason": null,
+        "version": 1
+      },
+      "meta": {
+        "page": 1,
+        "size": 1,
+        "totalData": 1,
+        "totalPages": 1
+      }
+    }
+  },
+  "status-unknown": {
+    "status": 404,
+    "body": {
+      "statusCode": 404,
+      "path": "/app/terrapos/integrations/streetfood/orders/mo_doesnotexist000000000",
+      "message": "Order not found.",
+      "code": "ORDER_NOT_FOUND",
+      "data": {
+        "error": "Error",
+        "statusCode": 404
+      },
+      "meta": {
+        "page": 1,
+        "size": 0,
+        "totalData": 0,
+        "totalPages": 0
+      }
+    }
+  },
+  "cancel-ok": {
+    "status": 200,
+    "body": {
+      "message": "Success",
+      "code": 200,
+      "path": "/app/terrapos/integrations/streetfood/orders/mo_1a6b7e9ef76f428389319006c75f0059/cancel",
+      "data": {
+        "posOrderId": "42fb09aa-7784-4163-9a6f-a722f2472274",
+        "platformOrderId": "mo_1a6b7e9ef76f428389319006c75f0059",
+        "status": "CANCELLED",
+        "pricing": {
+          "subtotalMinor": 1400000,
+          "taxMinor": 154000,
+          "serviceMinor": 0,
+          "totalMinor": 1554000
+        },
+        "acceptBy": "2026-11-21T03:22:35.006Z",
+        "prepTimeMinutes": null,
+        "reason": "changed my mind",
+        "version": 2
+      },
+      "meta": {
+        "page": 1,
+        "size": 1,
+        "totalData": 1,
+        "totalPages": 1
+      }
+    }
+  },
+  "cancel-again": {
+    "status": 200,
+    "body": {
+      "message": "Success",
+      "code": 200,
+      "path": "/app/terrapos/integrations/streetfood/orders/mo_1a6b7e9ef76f428389319006c75f0059/cancel",
+      "data": {
+        "posOrderId": "42fb09aa-7784-4163-9a6f-a722f2472274",
+        "platformOrderId": "mo_1a6b7e9ef76f428389319006c75f0059",
+        "status": "CANCELLED",
+        "pricing": {
+          "subtotalMinor": 1400000,
+          "taxMinor": 154000,
+          "serviceMinor": 0,
+          "totalMinor": 1554000
+        },
+        "acceptBy": "2026-11-21T03:22:35.006Z",
+        "prepTimeMinutes": null,
+        "reason": "changed my mind",
+        "version": 2
+      },
+      "meta": {
+        "page": 1,
+        "size": 1,
+        "totalData": 1,
+        "totalPages": 1
+      }
+    }
+  },
+  "cancel-late": {
+    "status": 409,
+    "body": {
+      "statusCode": 409,
+      "path": "/app/terrapos/integrations/streetfood/orders/mo_02c8dd72d46c445fba924895b0bb1ec5/cancel",
+      "message": "Cannot move an order from READY to CANCELLED.",
+      "code": "INVALID_TRANSITION",
+      "data": {
+        "error": "Error",
+        "statusCode": 409,
+        "from": "READY",
+        "to": "CANCELLED"
+      },
+      "meta": {
+        "page": 1,
+        "size": 0,
+        "totalData": 0,
+        "totalPages": 0
+      }
+    }
+  },
+  "submit-closed": {
+    "status": 409,
+    "body": {
+      "statusCode": 409,
+      "path": "/app/terrapos/integrations/streetfood/orders",
+      "message": "This outlet is not taking orders right now.",
+      "code": "OUTLET_CLOSED",
+      "data": {
+        "error": "Error",
+        "statusCode": 409
+      },
+      "meta": {
+        "page": 1,
+        "size": 0,
+        "totalData": 0,
+        "totalPages": 0
+      }
+    }
+  }
+}

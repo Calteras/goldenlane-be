@@ -1,0 +1,92 @@
+{
+  "message": "Success",
+  "code": 200,
+  "path": "/app/terrapos/integrations/streetfood/outlets",
+  "data": {
+    "generatedAt": "2026-11-18T15:12:34.618Z",
+    "outlets": [
+      {
+        "outletId": "ddbcc079-3b24-4999-a356-52cadceb732f",
+        "active": true,
+        "name": "Gerobak Keliling",
+        "address": "Keliling Jakarta Selatan",
+        "phone": "+62211234567",
+        "latitude": null,
+        "longitude": null,
+        "locationMode": "MOBILE",
+        "locationSharing": "LIVE",
+        "timezone": "Asia/Jakarta",
+        "onlineStatus": "OPEN",
+        "prepTimeMinutes": 15,
+        "pricingValid": true,
+        "hours": [],
+        "isOpenNow": true,
+        "acceptingOrders": true,
+        "stateVersion": 1,
+        "session": {
+          "active": true,
+          "sessionId": "7ac66af2-705b-45c4-a987-9358e5b64f17",
+          "startedAt": "2026-11-18T15:12:34.598Z",
+          "sharing": "LIVE",
+          "spot": {
+            "id": "ecf988d0-9e24-4e6f-aadd-3cad0345f123",
+            "name": "Pasar Minggu",
+            "latitude": -6.2,
+            "longitude": 106.8
+          }
+        },
+        "location": {
+          "mode": "LIVE",
+          "latitude": -6.2004,
+          "longitude": 106.8,
+          "accuracyM": 8,
+          "headingDeg": 90,
+          "moving": true,
+          "recordedAt": "2026-11-18T15:12:36.602Z"
+        }
+      },
+      {
+        "outletId": "f44f6406-408b-4d82-a0ab-08223f600b33",
+        "active": true,
+        "name": "Kios Melati",
+        "address": "Jl. Melati 3",
+        "phone": null,
+        "latitude": -6.25,
+        "longitude": 106.85,
+        "locationMode": "FIXED",
+        "locationSharing": "LIVE",
+        "timezone": "Asia/Jakarta",
+        "onlineStatus": "AUTO",
+        "prepTimeMinutes": 15,
+        "pricingValid": true,
+        "hours": [
+          {
+            "dayOfWeek": 1,
+            "opensAt": "08:00",
+            "closesAt": "17:00"
+          },
+          {
+            "dayOfWeek": 5,
+            "opensAt": "18:00",
+            "closesAt": "02:00"
+          }
+        ],
+        "isOpenNow": false,
+        "acceptingOrders": false,
+        "stateVersion": 1,
+        "session": null,
+        "location": {
+          "mode": "FIXED",
+          "latitude": -6.25,
+          "longitude": 106.85
+        }
+      }
+    ]
+  },
+  "meta": {
+    "page": 1,
+    "size": 1,
+    "totalData": 1,
+    "totalPages": 1
+  }
+}

@@ -1,0 +1,92 @@
+[
+  {
+    "data": {
+      "reason": "changed my mind",
+      "status": "CANCELLED",
+      "occurredAt": "2026-11-21T03:17:35.013Z",
+      "posOrderId": "42fb09aa-7784-4163-9a6f-a722f2472274",
+      "platformOrderId": "mo_1a6b7e9ef76f428389319006c75f0059",
+      "prepTimeMinutes": null
+    },
+    "type": "order.status.changed",
+    "eventId": "b6fdd54f-398d-48fa-9830-c4d0dd234ecf",
+    "version": 2,
+    "outletId": "b68e42b3-f58e-43fc-92bb-35a8d5795c51",
+    "occurredAt": "2026-11-21T03:17:35.015Z"
+  },
+  {
+    "data": {
+      "reason": null,
+      "status": "ACCEPTED",
+      "occurredAt": "2026-11-21T03:17:35.023Z",
+      "posOrderId": "3e2b58ee-028d-4b1d-8d4e-d731f10f5bba",
+      "platformOrderId": "mo_02c8dd72d46c445fba924895b0bb1ec5",
+      "prepTimeMinutes": 15
+    },
+    "type": "order.status.changed",
+    "eventId": "f0f74ef7-5ddc-44a4-a973-da46177c470b",
+    "version": 2,
+    "outletId": "b68e42b3-f58e-43fc-92bb-35a8d5795c51",
+    "occurredAt": "2026-11-21T03:17:35.025Z"
+  },
+  {
+    "data": {
+      "reason": null,
+      "status": "PREPARING",
+      "occurredAt": "2026-11-21T03:17:35.029Z",
+      "posOrderId": "3e2b58ee-028d-4b1d-8d4e-d731f10f5bba",
+      "platformOrderId": "mo_02c8dd72d46c445fba924895b0bb1ec5",
+      "prepTimeMinutes": 15
+    },
+    "type": "order.status.changed",
+    "eventId": "bdacd285-9ba5-4fef-a785-bf806b3bd1c7",
+    "version": 3,
+    "outletId": "b68e42b3-f58e-43fc-92bb-35a8d5795c51",
+    "occurredAt": "2026-11-21T03:17:35.098Z"
+  },
+  {
+    "data": {
+      "reason": null,
+      "status": "READY",
+      "occurredAt": "2026-11-21T03:17:35.104Z",
+      "posOrderId": "3e2b58ee-028d-4b1d-8d4e-d731f10f5bba",
+      "platformOrderId": "mo_02c8dd72d46c445fba924895b0bb1ec5",
+      "prepTimeMinutes": 15
+    },
+    "type": "order.status.changed",
+    "eventId": "36cb554f-799c-4337-bf4f-033189a4961e",
+    "version": 4,
+    "outletId": "b68e42b3-f58e-43fc-92bb-35a8d5795c51",
+    "occurredAt": "2026-11-21T03:17:35.105Z"
+  },
+  {
+    "data": {
+      "reason": null,
+      "status": "COMPLETED",
+      "occurredAt": "2026-11-21T03:17:35.127Z",
+      "posOrderId": "3e2b58ee-028d-4b1d-8d4e-d731f10f5bba",
+      "platformOrderId": "mo_02c8dd72d46c445fba924895b0bb1ec5",
+      "prepTimeMinutes": 15
+    },
+    "type": "order.status.changed",
+    "eventId": "ea84922d-af4a-407e-b750-5aca26e3391d",
+    "version": 5,
+    "outletId": "b68e42b3-f58e-43fc-92bb-35a8d5795c51",
+    "occurredAt": "2026-11-21T03:17:35.141Z"
+  },
+  {
+    "data": {
+      "reason": "Habis",
+      "status": "REJECTED",
+      "occurredAt": "2026-11-21T03:17:35.156Z",
+      "posOrderId": "71d986a3-1721-42fd-9c07-5962375bfa7b",
+      "platformOrderId": "mo_e21f6e0a4d5e4222bebc984bc4205dde",
+      "prepTimeMinutes": null
+    },
+    "type": "order.status.changed",
+    "eventId": "568f80f3-87a6-4805-b3a9-4c5b5e512818",
+    "version": 2,
+    "outletId": "b68e42b3-f58e-43fc-92bb-35a8d5795c51",
+    "occurredAt": "2026-11-21T03:17:35.157Z"
+  }
+]

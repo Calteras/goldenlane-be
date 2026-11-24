@@ -1,0 +1,116 @@
+{
+  "message": "Success",
+  "code": 200,
+  "path": "/app/terrapos/integrations/streetfood/outlets/ddbcc079-3b24-4999-a356-52cadceb732f/snapshot",
+  "data": {
+    "generatedAt": "2026-11-18T15:12:34.624Z",
+    "outlet": {
+      "outletId": "ddbcc079-3b24-4999-a356-52cadceb732f",
+      "active": true,
+      "name": "Gerobak Keliling",
+      "address": "Keliling Jakarta Selatan",
+      "phone": "+62211234567",
+      "latitude": null,
+      "longitude": null,
+      "locationMode": "MOBILE",
+      "locationSharing": "LIVE",
+      "timezone": "Asia/Jakarta",
+      "onlineStatus": "OPEN",
+      "prepTimeMinutes": 15,
+      "pricingValid": true,
+      "hours": [],
+      "isOpenNow": true,
+      "acceptingOrders": true,
+      "stateVersion": 1,
+      "session": {
+        "active": true,
+        "sessionId": "7ac66af2-705b-45c4-a987-9358e5b64f17",
+        "startedAt": "2026-11-18T15:12:34.598Z",
+        "sharing": "LIVE",
+        "spot": {
+          "id": "ecf988d0-9e24-4e6f-aadd-3cad0345f123",
+          "name": "Pasar Minggu",
+          "latitude": -6.2,
+          "longitude": 106.8
+        }
+      },
+      "location": {
+        "mode": "LIVE",
+        "latitude": -6.2004,
+        "longitude": 106.8,
+        "accuracyM": 8,
+        "headingDeg": 90,
+        "moving": true,
+        "recordedAt": "2026-11-18T15:12:36.602Z"
+      }
+    },
+    "catalog": {
+      "catalogVersion": 1,
+      "pricing": {
+        "taxRate": 11,
+        "serviceChargeRate": 0
+      },
+      "pricingPolicy": {
+        "version": 2,
+        "id": "2e76b43601b1265e9a8c2b4a68d51e9748ce2deb675feb24b9e389a19b0078eb",
+        "taxes": [
+          {
+            "id": "legacy-tax",
+            "name": "Tax",
+            "rate": 1100,
+            "inclusive": false
+          }
+        ],
+        "services": []
+      },
+      "categories": [
+        {
+          "id": "eab84359-f71b-4e59-bf55-b245ad923989",
+          "name": "Minuman",
+          "products": [
+            {
+              "id": "32d5519e-ca86-44b8-9f2d-db4856f2a991",
+              "name": "Es Teh Manis",
+              "description": "Teh dingin",
+              "imageUrl": null,
+              "priceMinor": 500000,
+              "variants": [
+                {
+                  "id": "ef3abbde-5f83-4ec0-bdda-2a168463610f",
+                  "name": "Large",
+                  "priceDeltaMinor": 200000,
+                  "available": true
+                }
+              ],
+              "modifierGroups": [
+                {
+                  "id": "91e22706-e85f-4a23-bfc4-cdb19824b3a2",
+                  "name": "Gula",
+                  "required": true,
+                  "minSelection": 1,
+                  "maxSelection": 1,
+                  "options": [
+                    {
+                      "id": "daa97994-c477-477a-859e-661444f744cc",
+                      "name": "Normal",
+                      "priceDeltaMinor": 0,
+                      "isDefault": true,
+                      "available": true
+                    }
+                  ]
+                }
+              ],
+              "soldOut": false
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "meta": {
+    "page": 1,
+    "size": 1,
+    "totalData": 1,
+    "totalPages": 1
+  }
+}
