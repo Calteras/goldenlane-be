@@ -4,7 +4,7 @@
 #   migration   the migration tool and the committed migrations; the API never migrates itself
 #   production  the API: static binaries on scratch, non-root, health-checked (default target)
 
-FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS modules
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS modules
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download

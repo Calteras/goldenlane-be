@@ -415,3 +415,107 @@ func mustJSON(t *testing.T, v any) string {
 
 	return string(raw)
 }
+
+// eventsAs sends a signed (empty-ish) batch as the given merchant key and returns the status.
+func (a *api) eventsAs(keyID, secret string) int {
+	a.t.Helper()
+
+	body := []byte(`{"events":[{"eventId":"e-` + keyID + secret + `","type":"unknown.event","occurredAt":"2026-11-21T00:00:00Z","data":{}}]}`)
+	ts := strconv.FormatInt(time.Now().Unix(), 10)
+	path := "/v1/integrations/pos/events"
+	status, _, _ := a.do("POST", path, body, map[string]string{
+		signing.HeaderKeyID: keyID, signing.HeaderTimestamp: ts,
+		signing.HeaderSignature: signing.Sign(secret, ts, "POST", path, body),
+	})
+
+	return status
+}
+
+func TestAdminUpdatesAMerchantsLink(t *testing.T) {
+	a := newAPI(t)
+	admin := bearer(adminToken)
+
+	const (
+		oldKey, oldSecret = "sfk_aaaaaaaaaaaaaaaaaaaaaaaa", "sfs_old_merchant_secret"
+		newKey, newSecret = "sfk_bbbbbbbbbbbbbbbbbbbbbbbb", "sfs_new_merchant_secret"
+	)
+
+	status, body, _ := a.do("POST", "/v1/admin/merchants", map[string]any{
+		"name": "Kopi Senja", "posTenantId": "tenant-2", "keyId": oldKey, "secret": oldSecret, "posBaseUrl": "https://pos.example.com",
+	}, admin)
+	require.Equal(t, 201, status)
+
+	id := body["data"].(map[string]any)["id"].(string)
+	path := "/v1/admin/merchants/" + id + "/link"
+	update := func(over map[string]any) map[string]any {
+		out := map[string]any{"keyId": newKey, "secret": newSecret, "posBaseUrl": "https://pos.example.com"}
+		for k, v := range over {
+			out[k] = v
+		}
+
+		return out
+	}
+
+	require.Equal(t, 204, a.eventsAs(oldKey, oldSecret), "the merchant works with its first credentials")
+
+	status, _, _ = a.do("PUT", path, update(nil), nil)
+	require.Equal(t, 401, status, "operators only")
+
+	status, _, _ = a.do("PUT", "/v1/admin/merchants/not-a-uuid/link", update(nil), admin)
+	require.Equal(t, 404, status)
+	status, _, _ = a.do("PUT", "/v1/admin/merchants/00000000-0000-4000-8000-000000000000/link", update(nil), admin)
+	require.Equal(t, 404, status)
+
+	for name, over := range map[string]map[string]any{
+		"bad key id":       {"keyId": "abc"},
+		"bad secret":       {"secret": "plain"},
+		"host not allowed": {"posBaseUrl": "https://evil.example.org"},
+	} {
+		status, body, _ = a.do("PUT", path, update(over), admin)
+		require.Equal(t, 422, status, name)
+		require.Equal(t, "MERCHANT_INVALID", body["code"], name)
+	}
+
+	// The POS must accept the new credentials, or the working ones stay.
+	a.e.POS.Err = errors.New("401")
+	status, body, _ = a.do("PUT", path, update(nil), admin)
+	require.Equal(t, 422, status)
+	require.Equal(t, "LINK_UNVERIFIED", body["code"])
+
+	a.e.POS.Err = nil
+
+	require.Equal(t, 204, a.eventsAs(oldKey, oldSecret), "a refused update changed nothing")
+
+	// Another merchant's key cannot be taken.
+	status, _, _ = a.do("PUT", path, update(map[string]any{"keyId": a.e.KeyID}), admin)
+	require.Equal(t, 409, status)
+
+	// A reconnect brings a new key id and secret.
+	status, body, _ = a.do("PUT", path, update(nil), admin)
+	require.Equal(t, 200, status)
+	require.Equal(t, newKey, body["data"].(map[string]any)["keyId"])
+	require.NotContains(t, mustJSON(t, body), newSecret, "the secret is never echoed")
+
+	var stored string
+	require.NoError(t, a.e.Pool.QueryRow(a.e.Ctx, `SELECT secret_enc FROM merchant_links WHERE merchant_id = $1`, id).Scan(&stored))
+	require.NotContains(t, stored, newSecret, "stored encrypted")
+
+	require.Equal(t, 401, a.eventsAs(oldKey, oldSecret), "the old credentials stop working")
+	require.Equal(t, 204, a.eventsAs(newKey, newSecret))
+
+	// A rotation keeps the key id and changes only the secret.
+	const rotated = "sfs_rotated_merchant_secret"
+
+	status, _, _ = a.do("PUT", path, update(map[string]any{"secret": rotated}), admin)
+	require.Equal(t, 200, status)
+	require.Equal(t, 401, a.eventsAs(newKey, newSecret))
+	require.Equal(t, 204, a.eventsAs(newKey, rotated))
+
+	// A suspended merchant stays off even with working credentials: only reinstating it can change that.
+	status, _, _ = a.do("DELETE", "/v1/admin/merchants/"+id, nil, admin)
+	require.Equal(t, 204, status)
+
+	status, _, _ = a.do("PUT", path, update(map[string]any{"secret": "sfs_after_suspension"}), admin)
+	require.Equal(t, 200, status)
+	require.Equal(t, 401, a.eventsAs(newKey, "sfs_after_suspension"))
+}

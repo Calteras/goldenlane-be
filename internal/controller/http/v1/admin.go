@@ -16,6 +16,7 @@ type Merchants interface {
 	Register(ctx context.Context, in merchant.Registration) (entity.Merchant, error)
 	List(ctx context.Context) ([]entity.Merchant, error)
 	Suspend(ctx context.Context, id string) error
+	UpdateLink(ctx context.Context, id string, in merchant.LinkUpdate) (entity.Merchant, error)
 }
 
 type adminRoutes struct {
@@ -30,6 +31,7 @@ func NewAdminRoutes(g fiber.Router, uc Merchants, pay Gateways, l logger.Interfa
 	g.Post("/merchants", r.register)
 	g.Get("/merchants", r.list)
 	g.Delete("/merchants/:id", r.suspend)
+	g.Put("/merchants/:id/link", r.updateLink)
 }
 
 // register links a merchant's POS. The credentials come from the owner's link in the POS.
@@ -75,4 +77,31 @@ func (r *adminRoutes) suspend(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// updateLink replaces a registered business's POS credentials. The owner gets a new secret in the
+// POS when they rotate it or reconnect, and the operator passes it on here.
+func (r *adminRoutes) updateLink(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return fail(r.l, entity.ErrNotFound)
+	}
+
+	var body struct {
+		KeyID      string `json:"keyId"`
+		Secret     string `json:"secret"`
+		POSBaseURL string `json:"posBaseUrl"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return badRequest("body is not valid JSON")
+	}
+
+	m, err := r.uc.UpdateLink(c.UserContext(), id.String(), merchant.LinkUpdate{
+		KeyID: body.KeyID, Secret: body.Secret, POSBaseURL: body.POSBaseURL,
+	})
+	if err != nil {
+		return fail(r.l, err)
+	}
+
+	return ok(c, m)
 }

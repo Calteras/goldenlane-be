@@ -11,7 +11,7 @@ lint:
 
 test:
   stage: test
-  image: golang:1.24
+  image: golang:1.26
   services:
     - name: postgres:17
       alias: postgres

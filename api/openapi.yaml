@@ -398,6 +398,33 @@ paths:
         '200': { description: 'Totals and entries (`salesMinor`, `customerFeeMinor`, `merchantFeeMinor`, `totalOwedMinor`)' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
+  /v1/admin/merchants/{id}/link:
+    put:
+      tags: [Operator]
+      summary: Replace a registered business's POS credentials
+      description: |
+        For a business that created a new secret in its POS, or disconnected and connected again.
+        The credentials are tested against the POS first, so a mistake cannot cut a working
+        merchant off. The merchant keeps its id, outlets and orders; the old credentials stop
+        working. A suspended merchant stays suspended.
+      security: [{ operator: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keyId, secret, posBaseUrl]
+              properties:
+                keyId: { type: string, description: 'sfk_ followed by 24 hex characters' }
+                secret: { type: string, description: 'sfs_…' }
+                posBaseUrl: { type: string, description: 'https origin of the POS (localhost allowed outside production)' }
+      responses:
+        '200': { description: The merchant, without its secret }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { description: Another merchant already uses this key id }
+        '422': { description: 'Invalid (`MERCHANT_INVALID`) or the POS rejected the credentials (`LINK_UNVERIFIED`)' }
   /v1/admin/merchants/{id}/fees/settle:
     post:
       tags: [Operator]

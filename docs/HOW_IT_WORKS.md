@@ -93,6 +93,7 @@ POS. That is what makes the lost-message cases in section 9 harmless.
 ```
 
 - One link per business. The `keyId` identifies it; the `secret` is shared by both sides.
+- A new secret (or a disconnect and reconnect) changes the credentials on the POS side only. The operator then replaces them here with `PUT /v1/admin/merchants/{id}/link`, which tests them against the POS first. Until then the platform keeps refusing the POS's events, and the POS shows the business as waiting.
 - The POS stores the secret AES-256-GCM encrypted with `STREETFOOD_ENCRYPTION_KEY`, bound to the
   tenant. This API stores it the same way with `ENCRYPTION_KEY`, bound to the merchant. Neither key
   is ever sent anywhere.

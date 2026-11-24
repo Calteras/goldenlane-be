@@ -73,24 +73,26 @@ Plans and the contract with the POS live in `../ansilum-be/docs/streetfood-os/`
 
 | Tool | Why |
 |---|---|
-| Go 1.24 or newer | build and run |
+| Go 1.26 or newer | build and run |
 | PostgreSQL 13 or newer with the `cube` and `earthdistance` extensions (they ship with PostgreSQL; the first migration creates them, so the database user needs permission to create extensions) | storage and nearby search |
-| Docker (optional) | a throwaway PostgreSQL, or the whole stack |
+| Docker | the shared PostgreSQL container, and optionally the API in a container |
 | `openssl`, `curl` | generating secrets, trying the API |
 | Python 3 with `pyjwt` and `cryptography` (optional) | the local sign-in helper, if you have no Firebase project |
 | The POS repo `../ansilum-be` with Node 24 (optional) | to run the full loop |
 
 ### 1. A database
 
-Either use Docker:
+Development uses the shared PostgreSQL container `local-dev-postgres-1` that `ansilum-be` also uses
+(PostgreSQL 15, host port 5433, Docker network `local-dev`, role `developer`). Start it from the
+shared local infrastructure first, then create this project's database once:
 
 ```sh
-docker compose up -d db          # PostgreSQL 17 on 127.0.0.1:5433, database "streetfood"
+docker exec local-dev-postgres-1 psql -U developer -d postgres -c 'CREATE DATABASE streetfood'
 ```
 
-If port 5433 is taken (another local PostgreSQL container, for example), move it:
-`DB_PORT=55434 docker compose up -d db`. Or use your own PostgreSQL and create an empty database:
-`createdb streetfood`.
+`developer` is a superuser there, so the first migration can create the `cube` and `earthdistance`
+extensions. The role's password is in `../ansilum-be/secrets/development/`. Without that container,
+any PostgreSQL 13+ with an empty `streetfood` database works.
 
 ### 2. Configure
 
@@ -98,11 +100,12 @@ If port 5433 is taken (another local PostgreSQL container, for example), move it
 cp .env.example .env
 ```
 
-Fill the four values the service refuses to start without. Everything else has a development default.
+Fill the values the service refuses to start without. Everything else has a development default.
 
 | Setting | How to get it |
 |---|---|
-| `PG_URL` | `postgres://postgres:postgres@localhost:5433/streetfood?sslmode=disable` for the compose database (use the port you chose) |
+| `PG_URL` | `postgres://developer:<password>@localhost:5433/streetfood?sslmode=disable` (for `make run`, from your machine) |
+| `DOCKER_PG_URL` | the same with host `postgres:5432` instead of `localhost:5433` (for `docker compose up`, from the `local-dev` network) |
 | `ADMIN_API_TOKEN` | `openssl rand -hex 32` (at least 32 characters; guards `/v1/admin`) |
 | `ENCRYPTION_KEY` | `openssl rand -base64 32` (32 bytes; encrypts merchants' POS secrets and gateway keys at rest) |
 | `FIREBASE_PROJECT_ID` | your Firebase project, or any name when you use the local sign-in helper (step 4) |
@@ -123,7 +126,7 @@ curl localhost:8080/healthz          # 200
 Startup downloads Firebase's token-signing keys once, so it needs network access to
 `FIREBASE_JWKS_URL` (or the local helper below).
 
-To run everything in containers instead (database, migrations, API):
+To run the migrations and the API in containers instead (on the shared database):
 
 ```sh
 docker compose up --build          # API on 127.0.0.1:18080 (APP_PORT=… to change)
@@ -195,6 +198,10 @@ container points at the container itself. So:
 
 ### B. Link the business (in the POS)
 
+**In the POS web app (`ansilum-web`): open `StreetFood` in the menu** (Orders group). It connects the
+business, shows the one-time secret together with the details to pass on to the operator, and lets
+the owner publish outlets and set their status and hours. The calls below are what that screen does.
+
 As the business owner, with your usual POS session and `x-tenant-id` header:
 
 ```sh
@@ -218,7 +225,9 @@ curl -X POST localhost:8080/v1/admin/merchants \
 ```
 
 The credentials are tested against the POS before anything is stored, and the outlets and menus are
-loaded at once. In development `localhost` and `127.0.0.1` are accepted; anything else must be `https`
+loaded at once. For a business that is already registered (it created a new secret, or disconnected and
+connected again), replace its credentials instead:
+`PUT /v1/admin/merchants/<id>/link` with `keyId`, `secret` and `posBaseUrl`. In development `localhost` and `127.0.0.1` are accepted; anything else must be `https`
 and listed in `POS_ALLOWED_HOSTS`.
 
 ### D. See it, order from it
@@ -330,7 +339,7 @@ docs/HOW_IT_WORKS.md             how the POS, this API and the tracking engine e
 
 | Symptom | Likely cause |
 |---|---|
-| `docker compose up -d db` says the port is already allocated | Another container or PostgreSQL uses 5433. `DB_PORT=55434 docker compose up -d db`, and use that port in `PG_URL` |
+| `docker compose up` says network `local-dev` was not found | Start the shared local infrastructure (it creates the `local-dev` network and `local-dev-postgres-1`) |
 | The API exits at startup with a Firebase error | It cannot download Firebase's keys. Check network access, or use `scripts/dev-jwks.py` and set `FIREBASE_JWKS_URL` |
 | The API exits at startup complaining about `ADMIN_API_TOKEN` or `ENCRYPTION_KEY` | Too short, or not 32 base64 bytes. Generate them with the commands above |
 | Migrations fail on `CREATE EXTENSION` | The database user cannot create extensions. Use a superuser for development, or install `cube` and `earthdistance` ahead of time |
@@ -340,7 +349,7 @@ docs/HOW_IT_WORKS.md             how the POS, this API and the tracking engine e
 | Menu or hours changes in the POS take a while to appear | The POS looks for changes every `STREETFOOD_CHANGE_SCAN_SECONDS` (15 s by default) and delivers events from a worker that needs `STREETFOOD_WORKERS_ENABLED=true` |
 | Orders stay `CREATED` or end as `MERCHANT_UNREACHABLE` | The API cannot reach the POS. Check `posBaseUrl`, that the POS is up, and that the key is still active |
 | A paid order stays `UNPAID` | The gateway's callback cannot reach the API (no tunnel). The poller will find it within about half a minute; check the gateway keys and `callbackUrl` |
-| Signature errors in the POS or API logs (`SIGNATURE_INVALID`, 401) | The secret differs between the two sides, or the machines' clocks differ by more than 5 minutes. The secret is shown once, and the API has no endpoint yet to update a stored one, so in development do not rotate it (`POST $POS/link/rotate-secret`) unless you also recreate the database and register again |
+| Signature errors in the POS or API logs (`SIGNATURE_INVALID`, 401) | The secret differs between the two sides, or the machines' clocks differ by more than 5 minutes. After a new secret or a reconnect in the POS, the operator must pass it on with `PUT /v1/admin/merchants/<id>/link` (registering again is refused: the business is already registered) |
 
 ## Deploying to staging and production (Neon)
 
