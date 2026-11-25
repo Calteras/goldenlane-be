@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-24 -58 888 438" width="888" height="438" role="img"><title>One position's journey, with time</title><defs><marker id="a0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#475569"/></marker></defs><rect x="-24" y="-58" width="888" height="438" fill="#ffffff"/>
+<text x="0.0" y="-26.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e293b">One position's journey, with time</text>
+
+<rect x="0.0" y="0.0" width="120.0" height="34.0" rx="17" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<rect x="140.0" y="0.0" width="700.0" height="34.0" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+<circle cx="130" cy="17" r="0"/>
+<rect x="0.0" y="58.0" width="120.0" height="34.0" rx="17" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="140.0" y="58.0" width="700.0" height="34.0" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+<circle cx="130" cy="75" r="0"/>
+<rect x="0.0" y="116.0" width="120.0" height="34.0" rx="17" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="140.0" y="116.0" width="700.0" height="34.0" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+<circle cx="130" cy="133" r="0"/>
+<rect x="0.0" y="174.0" width="120.0" height="34.0" rx="17" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<rect x="140.0" y="174.0" width="700.0" height="34.0" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+<circle cx="130" cy="191" r="0"/>
+<rect x="0.0" y="232.0" width="120.0" height="34.0" rx="17" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<rect x="140.0" y="232.0" width="700.0" height="34.0" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+<circle cx="130" cy="249" r="0"/>
+<rect x="0.0" y="290.0" width="120.0" height="34.0" rx="17" fill="#ffedd5" stroke="#ea580c" stroke-width="1.5"/>
+<rect x="140.0" y="290.0" width="700.0" height="34.0" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+<circle cx="130" cy="307" r="0"/>
+<path d="M60.0,34.0 L60.0,58.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M60.0,92.0 L60.0,116.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M60.0,150.0 L60.0,174.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M60.0,208.0 L60.0,232.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M60.0,266.0 L60.0,290.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<text x="60.0" y="22.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#4c1d95" text-anchor="middle" font-weight="bold">t = 0.0 s</text>
+<text x="154.0" y="22.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="start" font-weight="normal">The vendor's phone sends a reading; the POS judges and stores it</text>
+<text x="60.0" y="80.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e3a8a" text-anchor="middle" font-weight="bold">t = 0.0 s</text>
+<text x="154.0" y="80.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="start" font-weight="normal">POS: at least 15 s since the last publication and moved 20 m or more: it writes the outbox event</text>
+<text x="60.0" y="138.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e3a8a" text-anchor="middle" font-weight="bold">t ≤ 5 s</text>
+<text x="154.0" y="138.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="start" font-weight="normal">The POS worker picks it up and POSTs the signed batch</text>
+<text x="60.0" y="196.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#14532d" text-anchor="middle" font-weight="bold">t + ~50 ms</text>
+<text x="154.0" y="196.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="start" font-weight="normal">The customer API verifies it, stores it in the inbox and answers 204</text>
+<text x="60.0" y="254.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#14532d" text-anchor="middle" font-weight="bold">t ≤ 1 s</text>
+<text x="154.0" y="254.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="start" font-weight="normal">The customer API's worker applies it: pos_lat and pos_lng are updated</text>
+<text x="60.0" y="312.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#7c2d12" text-anchor="middle" font-weight="bold">next request</text>
+<text x="154.0" y="312.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="start" font-weight="normal">GET /v1/outlets/nearby shows the new position</text>
+<text x="420.0" y="352.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">A customer sees a moving cart a few seconds behind the vendor: updated at most every 15 s, and only when the cart moved.</text>
+</svg>

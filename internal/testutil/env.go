@@ -15,6 +15,7 @@ import (
 	"github.com/Calteras/streetfood-customer-api/internal/entity"
 	"github.com/Calteras/streetfood-customer-api/internal/repository/persistent"
 	"github.com/Calteras/streetfood-customer-api/internal/usecase/integration"
+	"github.com/Calteras/streetfood-customer-api/pkg/postgres"
 	"github.com/Calteras/streetfood-customer-api/pkg/secretbox"
 	"github.com/Calteras/streetfood-customer-api/pkg/signing"
 )
@@ -46,6 +47,7 @@ type Env struct {
 	T           *testing.T
 	Ctx         context.Context
 	Pool        *pgxpool.Pool
+	Commits     *postgres.CommitTracer
 	Store       *persistent.Store
 	Box         *secretbox.Box
 	POS         *FakePOS
@@ -58,12 +60,12 @@ type Env struct {
 func NewEnv(t *testing.T) *Env {
 	t.Helper()
 
-	pool := DB(t)
+	pool, commits := DBWithCommits(t)
 	box, err := secretbox.New(bytes.Repeat([]byte{9}, 32))
 	require.NoError(t, err)
 
 	e := &Env{
-		T: t, Ctx: context.Background(), Pool: pool, Store: persistent.New(pool), Box: box,
+		T: t, Ctx: context.Background(), Pool: pool, Commits: commits, Store: persistent.New(pool), Box: box,
 		POS: &FakePOS{Snapshots: map[string]*entity.POSSnapshot{}}, KeyID: "sfk_" + "0123456789abcdef01234567",
 	}
 	e.Integration = integration.New(e.Store, e.POS, box, SilentLogger{})

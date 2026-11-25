@@ -27,6 +27,7 @@ import (
 	"github.com/Calteras/streetfood-customer-api/internal/usecase/ordering"
 	"github.com/Calteras/streetfood-customer-api/internal/usecase/payment"
 	"github.com/Calteras/streetfood-customer-api/pkg/httpserver"
+	"github.com/Calteras/streetfood-customer-api/pkg/postgres"
 	"github.com/Calteras/streetfood-customer-api/pkg/signing"
 )
 
@@ -56,7 +57,6 @@ type api struct {
 	gw     *testutil.FakeGateway
 	hub    *ordering.Hub
 	kiosk  testutil.Kiosk
-	cancel context.CancelFunc
 }
 
 type apiOptions struct {
@@ -91,10 +91,8 @@ func newAPIWith(t *testing.T, opt apiOptions) *api {
 	e.Integration.SetOrderMirror(orders)
 
 	hub := ordering.NewHub()
-	ctx, cancel := context.WithCancel(context.Background())
 
-	go hub.Run(ctx, e.Store.ListenOrderUpdates, testutil.SilentLogger{})
-	t.Cleanup(cancel)
+	e.Commits.OnNotify = func(n postgres.Notification) { hub.OnNotification(n.Channel, n.Payload) }
 
 	var serverOpts []httpserver.Option
 	if opt.writeTimeout > 0 {
@@ -107,7 +105,7 @@ func newAPIWith(t *testing.T, opt apiOptions) *api {
 		Orders: orders, Hub: hub, Payments: pay, Streaming: opt.streaming,
 	})
 
-	return &api{t: t, e: e, app: server.App, server: server, pos: fake, orders: orders, pay: pay, gw: gw, hub: hub, cancel: cancel}
+	return &api{t: t, e: e, app: server.App, server: server, pos: fake, orders: orders, pay: pay, gw: gw, hub: hub}
 }
 
 func (a *api) do(method, path string, body any, headers map[string]string) (int, map[string]any, nethttp.Header) {

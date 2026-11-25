@@ -18,6 +18,7 @@ import (
 	"github.com/Calteras/streetfood-customer-api/internal/testutil"
 	"github.com/Calteras/streetfood-customer-api/internal/usecase/ordering"
 	"github.com/Calteras/streetfood-customer-api/internal/usecase/payment"
+	"github.com/Calteras/streetfood-customer-api/pkg/postgres"
 )
 
 type world struct {
@@ -950,16 +951,10 @@ func TestHubHearsDatabaseChanges(t *testing.T) {
 	o := w.place(w.Rina, w.request())
 
 	hub := ordering.NewHub()
-	ctx, cancel := context.WithCancel(w.Ctx)
-
-	defer cancel()
-
-	go hub.Run(ctx, w.Store.ListenOrderUpdates, testutil.SilentLogger{})
+	w.Commits.OnNotify = func(n postgres.Notification) { hub.OnNotification(n.Channel, n.Payload) }
 
 	changes, stop := hub.Subscribe(o.ID)
 	defer stop()
-
-	time.Sleep(300 * time.Millisecond) // let the listener connect
 
 	require.NoError(t, w.UC.ApplyEvent(w.Ctx, 2, statusEvent(o.PlatformOrderID, "ACCEPTED")))
 

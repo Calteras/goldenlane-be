@@ -25,3 +25,18 @@ func ConnTimeout(timeout time.Duration) Option {
 		c.connTimeout = timeout
 	}
 }
+
+// Tracer reports commits to the process (see CommitTracer).
+func Tracer(t *CommitTracer) Option {
+	return func(c *Postgres) {
+		c.tracer = t
+	}
+}
+
+// ApplicationName names this service's connections in pg_stat_activity and in the Neon
+// console, unless the connection string already sets one.
+func ApplicationName(name string) Option {
+	return func(c *Postgres) {
+		c.applicationName = name
+	}
+}

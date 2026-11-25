@@ -12,7 +12,6 @@ import (
 
 // Profiles manages the signed-in customer's account.
 type Profiles interface {
-	Me(ctx context.Context, id string) (entity.Customer, error)
 	UpdateProfile(ctx context.Context, id string, name, avatarURL *string) (entity.Customer, error)
 	Delete(ctx context.Context, id string) error
 	RegisterDevice(ctx context.Context, id, platform, token string) error
@@ -34,13 +33,10 @@ func NewMeRoutes(g fiber.Router, signedIn fiber.Handler, uc Profiles, l logger.I
 	g.Post("/devices", signedIn, r.device)
 }
 
+// get returns the account the sign-in check just loaded: it is current (a change made here or
+// on another instance forgets it), so there is no second read.
 func (r *meRoutes) get(c *fiber.Ctx) error {
-	me, err := r.uc.Me(c.UserContext(), middleware.CustomerFrom(c).ID)
-	if err != nil {
-		return fail(r.l, err)
-	}
-
-	return ok(c, me)
+	return ok(c, middleware.CustomerFrom(c))
 }
 
 func (r *meRoutes) update(c *fiber.Ctx) error {

@@ -403,6 +403,17 @@ func TestOrderStream(t *testing.T) {
 				sawPing = sawPing || line == ": ping"
 				sawReconnect = sawReconnect || line == "event: reconnect"
 			case <-s.closed:
+				// Lines that arrived just before the end are still queued.
+				for drained := false; !drained; {
+					select {
+					case line := <-s.lines:
+						sawPing = sawPing || line == ": ping"
+						sawReconnect = sawReconnect || line == "event: reconnect"
+					default:
+						drained = true
+					}
+				}
+
 				break read
 			case <-deadline:
 				t.Fatal("the stream did not end by itself")

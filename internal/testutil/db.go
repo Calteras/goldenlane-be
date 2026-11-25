@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Calteras/streetfood-customer-api/pkg/migrator"
+	"github.com/Calteras/streetfood-customer-api/pkg/postgres"
 )
 
 func init() {
@@ -29,6 +30,16 @@ var (
 // every table emptied. Tests are skipped when TEST_PG_URL is not set. Run packages one at
 // a time (go test -p 1): they share the database.
 func DB(t *testing.T) *pgxpool.Pool {
+	t.Helper()
+
+	pool, _ := DBWithCommits(t)
+
+	return pool
+}
+
+// DBWithCommits is DB plus the tracer that reports this pool's commits, as the service wires it:
+// set its OnWrite and OnNotify to hear them.
+func DBWithCommits(t *testing.T) (*pgxpool.Pool, *postgres.CommitTracer) {
 	t.Helper()
 
 	url := os.Getenv("TEST_PG_URL")
@@ -55,7 +66,15 @@ func DB(t *testing.T) *pgxpool.Pool {
 		t.Fatalf("migrate: %v", migrateErr)
 	}
 
-	pool, err := pgxpool.New(context.Background(), url)
+	cfg, err := pgxpool.ParseConfig(url)
+	if err != nil {
+		t.Fatalf("config: %v", err)
+	}
+
+	tracer := &postgres.CommitTracer{}
+	cfg.ConnConfig.Tracer = tracer
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
 	if err != nil {
 		t.Fatalf("connect: %v", err)
 	}
@@ -70,5 +89,5 @@ func DB(t *testing.T) *pgxpool.Pool {
 		t.Fatalf("truncate: %v", err)
 	}
 
-	return pool
+	return pool, tracer
 }

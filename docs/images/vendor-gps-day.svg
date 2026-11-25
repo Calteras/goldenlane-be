@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-24 -58 1020 528" width="1020" height="528" role="img"><title>Broadcasting the position during the day</title><defs><marker id="a0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#475569"/></marker></defs><rect x="-24" y="-58" width="1020" height="528" fill="#ffffff"/>
+<text x="0.0" y="-26.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e293b">Broadcasting the position during the day</text>
+<line x1="111.0" y1="54" x2="111.0" y2="446.0" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 5"/>
+<line x1="361.0" y1="54" x2="361.0" y2="446.0" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 5"/>
+<line x1="611.0" y1="54" x2="611.0" y2="446.0" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 5"/>
+<line x1="861.0" y1="54" x2="861.0" y2="446.0" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 5"/>
+<rect x="0.0" y="0.0" width="222.0" height="54.0" rx="12" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<rect x="250.0" y="0.0" width="222.0" height="54.0" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="500.0" y="0.0" width="222.0" height="54.0" rx="12" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<rect x="750.0" y="0.0" width="222.0" height="54.0" rx="12" fill="#ffedd5" stroke="#ea580c" stroke-width="1.5"/>
+<rect x="160.1" y="85.0" width="16.0" height="16.0" rx="8" fill="#1e293b" stroke="#1e293b" stroke-width="1"/>
+<rect x="145.6" y="130.0" width="430.7" height="64.0" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.3"/>
+<rect x="140.0" y="213.0" width="16.0" height="16.0" rx="8" fill="#1e293b" stroke="#1e293b" stroke-width="1"/>
+<rect x="376.8" y="259.0" width="16.0" height="16.0" rx="8" fill="#1e293b" stroke="#1e293b" stroke-width="1"/>
+<rect x="531.5" y="304.0" width="159.0" height="32.0" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.3"/>
+<rect x="679.2" y="355.0" width="16.0" height="16.0" rx="8" fill="#1e293b" stroke="#1e293b" stroke-width="1"/>
+<path d="M118.0,108.0 L354.0,108.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M354.0,236.0 L118.0,236.0" fill="none" stroke="#475569" stroke-width="1.8" stroke-dasharray="7 5" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M368.0,282.0 L604.0,282.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M854.0,378.0 L618.0,378.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M618.0,424.0 L854.0,424.0" fill="none" stroke="#475569" stroke-width="1.8" stroke-dasharray="7 5" marker-end="url(#a0)" stroke-linejoin="round"/>
+<text x="111.0" y="22.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#4c1d95" text-anchor="middle" font-weight="bold">Phone</text>
+<text x="111.0" y="40.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" fill="#64748b" text-anchor="middle" font-weight="normal">background</text>
+<text x="361.0" y="32.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#1e3a8a" text-anchor="middle" font-weight="bold">POS</text>
+<text x="611.0" y="32.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#14532d" text-anchor="middle" font-weight="bold">Customer API</text>
+<text x="861.0" y="32.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#7c2d12" text-anchor="middle" font-weight="bold">Customers</text>
+<text x="236.0" y="96.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">readings (a batch)</text>
+<text x="168.1" y="97.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="bold">1</text>
+<text x="361.0" y="150.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">judge each reading (reject, flag, trust); keep the trail; current</text>
+<text x="361.0" y="166.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">position = newest trusted reading; publish if 15 s and 20 m passed</text>
+<text x="361.0" y="182.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">(parked: every 90 s at most)</text>
+<text x="236.0" y="224.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">send again in N seconds</text>
+<text x="148.0" y="225.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="bold">2</text>
+<text x="486.0" y="270.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">event outlet.location.updated</text>
+<text x="384.8" y="271.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="bold">3</text>
+<text x="611.0" y="324.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">stores it if it is newer</text>
+<text x="736.0" y="366.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">next search</text>
+<text x="687.2" y="367.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="bold">4</text>
+<text x="736.0" y="412.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">the dot moves</text>
+</svg>

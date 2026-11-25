@@ -23,6 +23,8 @@ type (
 		Admin       Admin
 		Secrets     Secrets
 		Integration Integration
+		Workers     Workers
+		Redis       Redis
 		Payments    Payments
 		Metrics     Metrics
 	}
@@ -78,10 +80,25 @@ type (
 
 	// Integration tunes the POS link.
 	Integration struct {
-		// WorkerInterval is how often queued POS events are applied while idle.
-		WorkerInterval time.Duration `env:"INTEGRATION_WORKER_INTERVAL" envDefault:"1s"`
-		// ReconcileInterval is how often each merchant's outlets are re-read from the POS.
-		ReconcileInterval time.Duration `env:"INTEGRATION_RECONCILE_INTERVAL" envDefault:"15m"`
+		// ReconcileInterval is how often each merchant's outlets are re-read from the POS, as
+		// a safety net: the POS pushes every change.
+		ReconcileInterval time.Duration `env:"INTEGRATION_RECONCILE_INTERVAL" envDefault:"1h"`
+	}
+
+	// Redis is optional. It only carries signals between instances of this service (see
+	// pkg/signals); nothing is stored in it.
+	Redis struct {
+		// URL is redis://[:password@]host:port/db, or rediss:// for TLS. Empty means one instance.
+		URL string `env:"REDIS_URL"`
+	}
+
+	// Workers tunes the background workers. They run when work is created (a commit wrote
+	// rows), when a retry or deadline falls due, and otherwise only on this sweep, so an
+	// idle service lets the database sleep (Neon suspends it after 5 idle minutes).
+	Workers struct {
+		// SweepInterval is the longest a worker sleeps with nothing scheduled. It only has to
+		// catch work that another instance created or a wake-up that was missed.
+		SweepInterval time.Duration `env:"WORKER_SWEEP_INTERVAL" envDefault:"1h"`
 	}
 
 	// Payments tunes online payment. Fees are in basis points (100 = 1%) of the order total.
@@ -123,6 +140,8 @@ var (
 	ErrEncryptionKey = errors.New("ENCRYPTION_KEY must be 32 bytes, base64 encoded")
 	// ErrInsecureURL means a hosted stage allows a non-https browser origin.
 	ErrInsecureURL = errors.New("staging and production need https:// browser origins")
+	// ErrSweep means the worker sweep is too short to let the database sleep, or too long to be a safety net.
+	ErrSweep = errors.New("WORKER_SWEEP_INTERVAL must be between 1m and 24h")
 	// ErrFees means a fee is outside what makes sense.
 	ErrFees = errors.New("FEE_CUSTOMER_BPS and FEE_MERCHANT_BPS must be between 0 and 2000")
 )
@@ -183,6 +202,10 @@ func (c *Config) validate() error {
 
 	if _, err := c.EncryptionKeyBytes(); err != nil {
 		return err
+	}
+
+	if c.Workers.SweepInterval < time.Minute || c.Workers.SweepInterval > 24*time.Hour {
+		return ErrSweep
 	}
 
 	for _, bps := range []int{c.Payments.CustomerFeeBps, c.Payments.MerchantFeeBps} {

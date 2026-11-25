@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-24 -58 1020 956" width="1020" height="956" role="img"><title>An order paid at pickup</title><defs><marker id="a0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#475569"/></marker></defs><rect x="-24" y="-58" width="1020" height="956" fill="#ffffff"/>
+<text x="0.0" y="-26.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e293b">An order paid at pickup</text>
+<line x1="111.0" y1="54" x2="111.0" y2="874.0" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 5"/>
+<line x1="361.0" y1="54" x2="361.0" y2="874.0" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 5"/>
+<line x1="611.0" y1="54" x2="611.0" y2="874.0" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 5"/>
+<line x1="861.0" y1="54" x2="861.0" y2="874.0" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 5"/>
+<rect x="0.0" y="0.0" width="222.0" height="54.0" rx="12" fill="#ffedd5" stroke="#ea580c" stroke-width="1.5"/>
+<rect x="250.0" y="0.0" width="222.0" height="54.0" rx="12" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<rect x="500.0" y="0.0" width="222.0" height="54.0" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="750.0" y="0.0" width="222.0" height="54.0" rx="12" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<rect x="149.5" y="85.0" width="16.0" height="16.0" rx="8" fill="#1e293b" stroke="#1e293b" stroke-width="1"/>
+<rect x="146.0" y="146.0" width="430.0" height="48.0" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.3"/>
+<rect x="400.4" y="213.0" width="16.0" height="16.0" rx="8" fill="#1e293b" stroke="#1e293b" stroke-width="1"/>
+<rect x="398.5" y="290.0" width="425.0" height="48.0" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.3"/>
+<rect x="638.0" y="357.0" width="16.0" height="16.0" rx="8" fill="#1e293b" stroke="#1e293b" stroke-width="1"/>
+<rect x="117.3" y="449.0" width="16.0" height="16.0" rx="8" fill="#1e293b" stroke="#1e293b" stroke-width="1"/>
+<rect x="0.0" y="490.0" width="972.0" height="26.0" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="694.0" y="539.0" width="16.0" height="16.0" rx="8" fill="#1e293b" stroke="#1e293b" stroke-width="1"/>
+<rect x="509.8" y="584.0" width="202.5" height="32.0" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.3"/>
+<rect x="383.0" y="635.0" width="16.0" height="16.0" rx="8" fill="#1e293b" stroke="#1e293b" stroke-width="1"/>
+<rect x="149.9" y="696.0" width="422.2" height="48.0" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.3"/>
+<rect x="119.0" y="763.0" width="16.0" height="16.0" rx="8" fill="#1e293b" stroke="#1e293b" stroke-width="1"/>
+<rect x="6.0" y="808.0" width="710.0" height="48.0" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.3"/>
+<path d="M118.0,124.0 L354.0,124.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M368.0,268.0 L604.0,268.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M618.0,380.0 L854.0,380.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M604.0,426.0 L368.0,426.0" fill="none" stroke="#475569" stroke-width="1.8" stroke-dasharray="7 5" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M354.0,472.0 L118.0,472.0" fill="none" stroke="#475569" stroke-width="1.8" stroke-dasharray="7 5" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M854.0,562.0 L618.0,562.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M604.0,674.0 L368.0,674.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M354.0,786.0 L118.0,786.0" fill="none" stroke="#475569" stroke-width="1.8" stroke-dasharray="7 5" marker-end="url(#a0)" stroke-linejoin="round"/>
+<text x="111.0" y="22.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#7c2d12" text-anchor="middle" font-weight="bold">Customer</text>
+<text x="111.0" y="40.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" fill="#64748b" text-anchor="middle" font-weight="normal">Goldenlane</text>
+<text x="361.0" y="32.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#14532d" text-anchor="middle" font-weight="bold">Customer API</text>
+<text x="611.0" y="22.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#1e3a8a" text-anchor="middle" font-weight="bold">POS</text>
+<text x="611.0" y="40.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" fill="#64748b" text-anchor="middle" font-weight="normal">ansilum-be</text>
+<text x="861.0" y="22.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#4c1d95" text-anchor="middle" font-weight="bold">Cashier</text>
+<text x="861.0" y="40.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" fill="#64748b" text-anchor="middle" font-weight="normal">Ansilum</text>
+<text x="236.0" y="96.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">POST /v1/checkouts</text>
+<text x="236.0" y="112.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">(Idempotency-Key)</text>
+<text x="157.5" y="97.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="bold">1</text>
+<text x="361.0" y="166.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">check the cart against the stored menu (friendly early errors); store</text>
+<text x="361.0" y="182.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">the order as CREATED (unique per customer + key)</text>
+<text x="486.0" y="224.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">signed POST /orders</text>
+<text x="486.0" y="240.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">{platformOrderId, items,</text>
+<text x="486.0" y="256.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">expectedTotalMinor, payment}</text>
+<text x="408.4" y="225.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="bold">2</text>
+<text x="611.0" y="310.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">price it (the only price authority), check the outlet is open, store it</text>
+<text x="611.0" y="326.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">as PENDING_ACCEPTANCE</text>
+<text x="736.0" y="368.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">socket + push: new order</text>
+<text x="646.0" y="369.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="bold">3</text>
+<text x="486.0" y="414.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">pricing, acceptBy</text>
+<text x="236.0" y="460.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">order, PENDING_ACCEPTANCE</text>
+<text x="125.3" y="461.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="bold">4</text>
+<text x="486.0" y="508.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#64748b" text-anchor="middle" font-weight="bold">The cashier answers before acceptBy (5 minutes by default)</text>
+<text x="736.0" y="550.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">accept</text>
+<text x="702.0" y="551.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="bold">5</text>
+<text x="611.0" y="604.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">status ACCEPTED, version 2</text>
+<text x="486.0" y="646.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">event order.status.changed</text>
+<text x="486.0" y="662.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">(outbox)</text>
+<text x="391.0" y="647.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="bold">6</text>
+<text x="361.0" y="716.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">apply if the version is newer; queue ONE push per (order, status);</text>
+<text x="361.0" y="732.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">wake the open streams</text>
+<text x="236.0" y="774.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">push + live stream: ACCEPTED</text>
+<text x="127.0" y="775.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="bold">7</text>
+<text x="361.0" y="828.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">Then start (stock is consumed), ready and complete (the sale is recorded) reach the customer the same way,</text>
+<text x="361.0" y="844.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">steps 5 to 7.</text>
+</svg>

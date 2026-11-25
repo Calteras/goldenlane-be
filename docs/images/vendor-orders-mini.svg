@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-24 -58 1008 182" width="1008" height="182" role="img"><title>An order, from the vendor's side</title><defs><marker id="a0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#475569"/></marker></defs><rect x="-24" y="-58" width="1008" height="182" fill="#ffffff"/>
+<text x="0.0" y="-26.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e293b">An order, from the vendor's side</text>
+
+<rect x="0.0" y="0.0" width="160.0" height="60.0" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<rect x="200.0" y="0.0" width="160.0" height="60.0" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="400.0" y="0.0" width="160.0" height="60.0" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="600.0" y="0.0" width="160.0" height="60.0" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="800.0" y="0.0" width="160.0" height="60.0" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<path d="M160.0,30.0 L200.0,30.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M360.0,30.0 L400.0,30.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M560.0,30.0 L600.0,30.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M760.0,30.0 L800.0,30.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<text x="80.0" y="25.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">New order appears</text>
+<text x="80.0" y="42.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">on the cashier screen</text>
+<text x="280.0" y="25.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">Accept</text>
+<text x="280.0" y="42.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">(or reject)</text>
+<text x="480.0" y="25.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">Start preparing</text>
+<text x="480.0" y="42.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">(stock is used)</text>
+<text x="680.0" y="33.8" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">Ready</text>
+<text x="880.0" y="25.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">Complete</text>
+<text x="880.0" y="42.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="middle" font-weight="normal">(the sale is recorded)</text>
+<text x="0.0" y="96.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Accept before the order's acceptBy time (5 minutes by default), otherwise it expires and the customer is told to choose another place.</text>
+</svg>

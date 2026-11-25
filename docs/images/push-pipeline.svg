@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-45 -58 817 584" width="817" height="584" role="img"><title>Push: how a change travels from the POS to the customer API</title><defs><marker id="a0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#475569"/></marker></defs><rect x="-45" y="-58" width="817" height="584" fill="#ffffff"/>
+<text x="-20.5" y="-26.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e293b">Push: how a change travels from the POS to the customer API</text>
+
+<rect x="0.0" y="0.0" width="430.0" height="62.0" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="0.0" y="100.0" width="430.0" height="62.0" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="0.0" y="200.0" width="430.0" height="62.0" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="0.0" y="320.0" width="430.0" height="82.0" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<rect x="0.0" y="440.0" width="430.0" height="62.0" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<path d="M215.0,62.0 L215.0,100.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M215.0,162.0 L215.0,200.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M215.0,262.0 L215.0,320.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M215.0,402.0 L215.0,440.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<text x="215.0" y="17.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#1e3a8a" text-anchor="middle" font-weight="bold">Something changes in the POS</text>
+<text x="215.0" y="35.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">menu edit, vendor opens the day,</text>
+<text x="215.0" y="53.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">a position, an order status…</text>
+<text x="215.0" y="117.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#1e3a8a" text-anchor="middle" font-weight="bold">Outbox row</text>
+<text x="215.0" y="135.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">written in the SAME database transaction</text>
+<text x="215.0" y="153.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">as the change</text>
+<text x="215.0" y="226.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#1e3a8a" text-anchor="middle" font-weight="bold">POS worker (every 5 s)</text>
+<text x="215.0" y="244.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">leases up to 20 waiting events per link</text>
+<text x="215.0" y="338.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#14532d" text-anchor="middle" font-weight="bold">Customer API receives</text>
+<text x="215.0" y="356.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">verifies the signature</text>
+<text x="215.0" y="374.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">stores each event in the inbox</text>
+<text x="215.0" y="392.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">answers 204</text>
+<text x="215.0" y="466.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#14532d" text-anchor="middle" font-weight="bold">Worker (wakes after the commit)</text>
+<text x="215.0" y="484.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">applies the stored events, newest version wins; sleeps when none are due</text>
+<text x="227.0" y="296.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">POST {platformUrl}/v1/integrations/pos/events  (signed batch)</text>
+<text x="450.0" y="135.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">commit, or nothing at all:</text>
+<text x="450.0" y="151.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">no "changed but never announced"</text>
+<text x="450.0" y="360.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">a duplicate event id is ignored</text>
+<text x="450.0" y="376.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">the answer is 204 once STORED,</text>
+<text x="450.0" y="392.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">not once applied</text>
+<text x="450.0" y="470.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">a crash between storing and applying loses nothing</text>
+</svg>

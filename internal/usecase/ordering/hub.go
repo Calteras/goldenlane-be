@@ -1,15 +1,10 @@
 package ordering
 
-import (
-	"context"
-	"sync"
-	"time"
+import "sync"
 
-	"github.com/Calteras/streetfood-customer-api/pkg/logger"
-)
-
-// Hub tells open streams that an order changed. Changes come from the database's
-// notifications, so a stream on one instance hears changes made through another.
+// Hub tells open streams that an order changed. It is told by the commits this instance makes;
+// with several instances, a change made by another one reaches a stream at its next safety
+// re-read (see the order stream) unless the instances share a signal such as Redis pub/sub.
 type Hub struct {
 	mu   sync.Mutex
 	subs map[string]map[chan struct{}]struct{}
@@ -56,24 +51,15 @@ func (h *Hub) Notify(orderID string) {
 	}
 }
 
-// Run listens for order changes until ctx ends, reconnecting if the connection drops.
-func (h *Hub) Run(ctx context.Context, listen func(ctx context.Context, fn func(orderID string)) error, log logger.Interface) {
-	wait := time.Second
+// OrderUpdates is the notification channel the store sends when an order changes.
+const OrderUpdates = "order_updates"
 
-	for ctx.Err() == nil {
-		err := listen(ctx, h.Notify)
-		if ctx.Err() != nil {
-			return
-		}
-
-		log.Warn("order updates listener stopped", "error", err.Error(), "retry_in", wait.String())
-
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(wait):
-		}
-
-		wait = min(wait*2, 30*time.Second)
+// OnNotification wakes the watchers of an order when the database commits a change to it.
+// The service hears its own commits through the connection tracer (pkg/postgres.CommitTracer),
+// so no connection is held open for LISTEN, which would reconnect after every suspend and
+// keep a serverless database awake.
+func (h *Hub) OnNotification(channel, payload string) {
+	if channel == OrderUpdates {
+		h.Notify(payload)
 	}
 }

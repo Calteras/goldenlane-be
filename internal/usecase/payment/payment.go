@@ -18,9 +18,12 @@ import (
 	"github.com/Calteras/streetfood-customer-api/pkg/secretbox"
 )
 
+// PollAfter is how long an open payment may go without news before the gateway is asked.
+const PollAfter = 20 * time.Second
+
 const (
 	_batch         = 10
-	_pollAfter     = 20 * time.Second
+	_pollAfter     = PollAfter
 	_refundLease   = 2 * time.Minute
 	_maxRefundTry  = 8
 	_gatewayTimout = 12 * time.Second

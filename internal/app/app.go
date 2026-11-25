@@ -26,6 +26,7 @@ import (
 	"github.com/Calteras/streetfood-customer-api/pkg/logger"
 	"github.com/Calteras/streetfood-customer-api/pkg/postgres"
 	"github.com/Calteras/streetfood-customer-api/pkg/secretbox"
+	"github.com/Calteras/streetfood-customer-api/pkg/signals"
 )
 
 const _shutdownTimeout = 10 * time.Second
@@ -41,7 +42,50 @@ func Run(cfg *config.Config) {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	pg, err := postgres.New(cfg.PG.URL, postgres.MaxPoolSize(cfg.PG.PoolMax))
+	// Workers sleep until work exists. The tracer hears this process's own commits: a commit that
+	// wrote rows wakes every worker, and a committed pg_notify wakes the watchers of an order.
+	// Nothing polls the database and no connection is held for LISTEN, so Neon can suspend it.
+	//
+	// With Redis, the same signals also go to the other instances, and theirs come here.
+	var (
+		group poller.Group
+		hub   = ordering.NewHub()
+		bus   *signals.Bus
+		cache *discovery.Cached
+	)
+
+	if cfg.Redis.URL != "" {
+		b, err := signals.New(cfg.Redis.URL, cfg.App.Name+":"+cfg.App.Env+":signals", l)
+		if err != nil {
+			l.Fatal("app - Run - signals", "error", err.Error())
+		}
+
+		bus = b
+	}
+
+	// A write that touched what customers browse drops the discovery snapshot, here and elsewhere.
+	wrote := func(tables []string) {
+		group.Wake()
+
+		if cache != nil && discovery.Watches(tables) {
+			cache.Invalidate()
+		}
+	}
+
+	pg, err := postgres.New(cfg.PG.URL,
+		postgres.MaxPoolSize(cfg.PG.PoolMax),
+		postgres.ApplicationName(cfg.App.Name),
+		postgres.Tracer(&postgres.CommitTracer{
+			OnWrite: func(tables []string) {
+				wrote(tables)
+				bus.Publish(signals.Message{Kind: signals.KindWrite, Tables: tables})
+			},
+			OnNotify: func(n postgres.Notification) {
+				hub.OnNotification(n.Channel, n.Payload)
+				bus.Publish(signals.Message{Kind: signals.KindNotify, Channel: n.Channel, Payload: n.Payload})
+			},
+		}),
+	)
 	if err != nil {
 		l.Fatal("app - Run - postgres.New", "error", err.Error())
 	}
@@ -67,7 +111,12 @@ func Run(cfg *config.Config) {
 
 	integ := integration.New(store, posClient, box, l)
 	ident := identity.New(store, verifier)
-	disc := discovery.New(store)
+	ident.OnForget(func(customerID string) {
+		bus.Publish(signals.Message{Kind: signals.KindForget, Payload: customerID})
+	})
+
+	cache = discovery.NewCached(store)
+	disc := discovery.New(cache)
 	merch := merchant.New(store, posClient, integ, box, merchant.Settings{
 		AllowedHosts: cfg.POSHosts(),
 		Production:   cfg.IsProduction(),
@@ -100,9 +149,6 @@ func Run(cfg *config.Config) {
 		l.Warn("push notifications are off (FCM_SERVICE_ACCOUNT_FILE is not set)")
 	}
 
-	hub := ordering.NewHub()
-	go hub.Run(ctx, store.ListenOrderUpdates, l)
-
 	server := httpserver.New(httpserver.Port(cfg.HTTP.Port))
 	httpctl.NewRouter(server.App, cfg, l, httpctl.Dependencies{
 		Auth: ident, Events: integ, Discovery: disc, Profiles: ident, Merchants: merch, Orders: orders, Hub: hub, Payments: pay,
@@ -110,20 +156,43 @@ func Run(cfg *config.Config) {
 
 	notifier := ordering.NewNotifier(store, pusher, l)
 
-	workers := []*poller.Poller{
-		poller.New("pos events", integ.Process, cfg.Integration.WorkerInterval, l),
-		poller.New("pos reconcile", integ.Reconcile, cfg.Integration.ReconcileInterval, l),
-		poller.New("order submit", orders.ProcessSubmits, time.Second, l),
-		poller.New("order refresh", orders.RefreshStale, 30*time.Second, l),
-		poller.New("push", notifier.Process, 2*time.Second, l),
-		poller.New("payment check", pay.Poll, 10*time.Second, l),
-		poller.New("payment expiry", pay.ExpireUnpaid, 15*time.Second, l),
-		poller.New("refunds", pay.Refund, 10*time.Second, l),
+	// Workers with a deadline sleep until the next item falls due (a retry, a lease, a payment
+	// window). The others only run when woken or on the sweep: the POS pushes order changes and
+	// the gateway calls back, so re-reading orders and payments is a safety net.
+	sweep := cfg.Workers.SweepInterval
+	payDue := func(ctx context.Context) (time.Duration, bool, error) {
+		return store.PaymentCheckDue(ctx, payment.PollAfter)
 	}
+
+	workers := []*poller.Poller{
+		poller.New("pos events", integ.Process, sweep, l, poller.WithDue(store.InboxDue)),
+		poller.New("pos reconcile", integ.Reconcile, cfg.Integration.ReconcileInterval, l),
+		poller.New("order submit", orders.ProcessSubmits, sweep, l, poller.WithDue(store.SubmitDue)),
+		poller.New("order refresh", orders.RefreshStale, sweep, l),
+		poller.New("push", notifier.Process, sweep, l, poller.WithDue(store.NotificationDue)),
+		poller.New("payment check", pay.Poll, sweep, l, poller.WithDue(payDue)),
+		poller.New("payment expiry", pay.ExpireUnpaid, sweep, l, poller.WithDue(store.UnpaidDue)),
+		poller.New("refunds", pay.Refund, sweep, l, poller.WithDue(store.RefundDue)),
+	}
+
+	// The reconcile worker does not wake on commits: it is a scheduled read of the POS.
+	group.Add(workers[0], workers[2], workers[3], workers[4], workers[5], workers[6], workers[7])
 
 	for _, w := range workers {
 		w.Start()
 	}
+
+	// Signals from the other instances: the same reactions as to this instance's own commits.
+	go bus.Run(ctx, func(m signals.Message) {
+		switch m.Kind {
+		case signals.KindWrite:
+			wrote(m.Tables)
+		case signals.KindNotify:
+			hub.OnNotification(m.Channel, m.Payload)
+		case signals.KindForget:
+			ident.Forget(m.Payload)
+		}
+	})
 
 	server.Start()
 

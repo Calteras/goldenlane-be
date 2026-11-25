@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-28 -58 1052 402" width="1052" height="402" role="img"><title>Target: reads and live data stay off Neon, which wakes only for real writes</title><defs><marker id="a0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#475569"/></marker></defs><rect x="-28" y="-58" width="1052" height="402" fill="#ffffff"/>
+<text x="-4.3" y="-26.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e293b">Target: reads and live data stay off Neon, which wakes only for real writes</text>
+
+<rect x="0.0" y="0.0" width="200.0" height="70.0" rx="10" fill="#ffedd5" stroke="#ea580c" stroke-width="1.5"/>
+<rect x="300.0" y="0.0" width="300.0" height="150.0" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<rect x="760.0" y="0.0" width="240.0" height="150.0" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="300.0" y="230.0" width="300.0" height="90.0" rx="10" fill="#e2e8f0" stroke="#475569" stroke-width="1.5"/>
+<rect x="0.0" y="230.0" width="200.0" height="90.0" rx="10" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+<path d="M200.0,35.0 L300.0,35.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M600.0,75.0 L760.0,75.0" fill="none" stroke="#475569" stroke-width="1.8" stroke-dasharray="7 5" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M450.0,150.0 L450.0,230.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M600.0,275.0 L880.0,320.0 L880.0,150.0" fill="none" stroke="#475569" stroke-width="1.8" stroke-dasharray="7 5" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M200.0,275.0 L300.0,275.0" fill="none" stroke="#475569" stroke-width="1.8" stroke-dasharray="7 5" stroke-linejoin="round"/>
+<text x="100.0" y="21.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#7c2d12" text-anchor="middle" font-weight="bold">Apps</text>
+<text x="100.0" y="39.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">Customer app</text>
+<text x="100.0" y="57.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">Ansilum vendor and cashier apps</text>
+<text x="450.0" y="43.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#14532d" text-anchor="middle" font-weight="bold">Customer API and POS backend</text>
+<text x="450.0" y="61.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">answers reads from memory or Redis:</text>
+<text x="450.0" y="79.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">outlets, menus, sessions, tenant checks,</text>
+<text x="450.0" y="97.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">live vendor positions</text>
+<text x="450.0" y="115.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">wakes its workers when work is created</text>
+<text x="880.0" y="43.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#1e3a8a" text-anchor="middle" font-weight="bold">Neon Postgres</text>
+<text x="880.0" y="61.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">orders, payments, outbox, accounts</text>
+<text x="880.0" y="79.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal"></text>
+<text x="880.0" y="97.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">sleeps between writes and a</text>
+<text x="880.0" y="115.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">coarse sweep every 15 to 60 minutes</text>
+<text x="450.0" y="252.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#1e293b" text-anchor="middle" font-weight="bold">SQLite spool or memory</text>
+<text x="450.0" y="270.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">GPS trail rows wait here</text>
+<text x="450.0" y="288.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">and are written in one batch</text>
+<text x="450.0" y="306.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">every 15 minutes or at the end of the day</text>
+<text x="100.0" y="261.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#713f12" text-anchor="middle" font-weight="bold">Redis (optional)</text>
+<text x="100.0" y="279.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">only needed with more than one</text>
+<text x="100.0" y="297.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">instance: signals, shared cache</text>
+<text x="250.0" y="22.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">reads,</text>
+<text x="250.0" y="38.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">positions</text>
+<text x="680.0" y="62.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">writes,</text>
+<text x="680.0" y="78.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">cache misses</text>
+<text x="460.0" y="195.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">position batches</text>
+<text x="872.0" y="308.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="end" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">one batch every 15 minutes</text>
+</svg>

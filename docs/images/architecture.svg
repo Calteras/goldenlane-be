@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-24 -58 948 586" width="948" height="586" role="img"><title>The cast and the five channels between them</title><defs><marker id="a0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#475569"/></marker></defs><rect x="-24" y="-58" width="948" height="586" fill="#ffffff"/>
+<text x="0.0" y="-26.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e293b">The cast and the five channels between them</text>
+
+<rect x="0.0" y="0.0" width="250.0" height="56.0" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<rect x="520.0" y="0.0" width="250.0" height="56.0" rx="10" fill="#ffedd5" stroke="#ea580c" stroke-width="1.5"/>
+<rect x="0.0" y="120.0" width="250.0" height="230.0" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="520.0" y="120.0" width="250.0" height="230.0" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<rect x="520.0" y="440.0" width="250.0" height="64.0" rx="10" fill="#e2e8f0" stroke="#475569" stroke-width="1.5"/>
+<path d="M125.0,56.0 L125.0,120.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M645.0,56.0 L645.0,120.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M256.0,160.0 L514.0,160.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M514.0,215.0 L256.0,215.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M514.0,270.0 L256.0,270.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M256.0,325.0 L514.0,325.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M645.0,350.0 L645.0,440.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" marker-start="url(#a0)" stroke-linejoin="round"/>
+<text x="125.0" y="23.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#4c1d95" text-anchor="middle" font-weight="bold">Staff apps (Ansilum)</text>
+<text x="125.0" y="41.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">Cashier tablet, vendor phone</text>
+<text x="645.0" y="23.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#7c2d12" text-anchor="middle" font-weight="bold">Customer app</text>
+<text x="645.0" y="41.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">Goldenlane (Flutter)</text>
+<text x="125.0" y="203.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#1e3a8a" text-anchor="middle" font-weight="bold">POS  (ansilum-be)</text>
+<text x="125.0" y="221.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">NestJS + PostgreSQL</text>
+<text x="125.0" y="239.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">outlets, hours, menus, prices,</text>
+<text x="125.0" y="257.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">the working day, GPS trails,</text>
+<text x="125.0" y="275.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">orders and sales</text>
+<text x="645.0" y="203.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#14532d" text-anchor="middle" font-weight="bold">Customer API</text>
+<text x="645.0" y="221.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">Go + its own PostgreSQL</text>
+<text x="645.0" y="239.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">accounts, search, orders and</text>
+<text x="645.0" y="257.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">payments, push, reviews,</text>
+<text x="645.0" y="275.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">the fee ledger</text>
+<text x="645.0" y="467.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" fill="#1e293b" text-anchor="middle" font-weight="bold">Xendit / Midtrans</text>
+<text x="645.0" y="485.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="middle" font-weight="normal">the merchant's own account</text>
+<text x="385.0" y="153.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">1. events: what changed</text>
+<text x="385.0" y="208.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">2. reads: outlets, menus</text>
+<text x="385.0" y="263.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">3. orders: price, place, cancel, status</text>
+<text x="385.0" y="318.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">4. fees: reserve, report</text>
+<text x="659.0" y="410.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">5. charge, refund, status (API → gateway)</text>
+<text x="659.0" y="426.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">callbacks (gateway → API)</text>
+<text x="385.0" y="395.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" fill="#b91c1c" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Never: the customer app calls the POS, or the</text>
+<text x="385.0" y="410.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" fill="#b91c1c" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">vendor's phone calls the customer API</text>
+</svg>

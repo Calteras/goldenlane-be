@@ -16,7 +16,7 @@ esac
 cd "$(dirname "$0")/.."
 dir="secrets/$stage"
 
-for f in app.env migration.env; do
+for f in app.env migration.env redis_password; do
   if [ -e "$dir/$f" ]; then
     echo "$dir/$f already exists; not overwriting" >&2
     exit 1
@@ -34,6 +34,16 @@ ADMIN_API_TOKEN=$(openssl rand -hex 32)
 ENCRYPTION_KEY=$(openssl rand -base64 32)
 EOF
 
+# Used only when the bundled Redis is started (--profile redis); harmless otherwise.
+redis_pw=$(openssl rand -hex 24)
+printf '%s' "$redis_pw" >"$dir/redis_password"
+
+cat >>"$dir/app.env" <<EOF
+# Only with more than one API instance. Uncomment after starting the bundled Redis
+# (sh scripts/compose.sh ${stage} --profile redis up -d redis), or point it at your own Redis.
+#REDIS_URL=redis://:${redis_pw}@redis:6379/0
+EOF
+
 cat >"$dir/migration.env" <<EOF
 # Only the database, for the migration job (${stage}).
 # Neon DIRECT connection string (no -pooler) of a role that may run DDL and create extensions.
@@ -42,12 +52,12 @@ EOF
 
 # The containers run as uid 1000. On Linux hand the files to it; elsewhere keep them private.
 if [ "$(uname -s)" = Linux ] && [ "$(id -u)" = 0 ]; then
-  chown 1000:1000 "$dir/app.env" "$dir/migration.env"
+  chown 1000:1000 "$dir/app.env" "$dir/migration.env" "$dir/redis_password"
 fi
-chmod 400 "$dir/app.env" "$dir/migration.env"
+chmod 400 "$dir/app.env" "$dir/migration.env" "$dir/redis_password"
 
-echo "Created $dir/app.env and $dir/migration.env (mode 400)."
-echo "Edit both to set PG_URL (chmod u+w first), then restore: chmod 400 $dir/*.env"
+echo "Created $dir/app.env, $dir/migration.env and $dir/redis_password (mode 400)."
+echo "Edit both to set PG_URL (chmod u+w first), then restore: chmod 400 $dir/*"
 echo "Back up ENCRYPTION_KEY somewhere safe: without it stored merchant secrets cannot be read."
 [ "$(uname -s)" != Linux ] || [ "$(id -u)" = 0 ] ||
-  echo "On a Linux server run: sudo chown 1000:1000 $dir/*.env"
+  echo "On a Linux server run: sudo chown 1000:1000 $dir/*"

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-61 -79 1115 355" width="1115" height="355" role="img"><title>An online order at the register</title><defs><marker id="a0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#475569"/></marker></defs><rect x="-61" y="-79" width="1115" height="355" fill="#ffffff"/>
+<text x="-36.9" y="-47.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e293b">An online order at the register</text>
+
+<rect x="0.0" y="0.0" width="150.0" height="48.0" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<rect x="220.0" y="0.0" width="150.0" height="48.0" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="440.0" y="0.0" width="150.0" height="48.0" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="660.0" y="0.0" width="150.0" height="48.0" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<rect x="880.0" y="0.0" width="150.0" height="48.0" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<rect x="-35.0" y="150.0" width="100.0" height="48.0" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+<rect x="85.0" y="150.0" width="100.0" height="48.0" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+<rect x="245.0" y="150.0" width="100.0" height="48.0" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+<path d="M150.0,24.0 L220.0,24.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M370.0,24.0 L440.0,24.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M590.0,24.0 L660.0,24.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M810.0,24.0 L880.0,24.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M15.0,48.0 L15.0,150.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M135.0,48.0 L135.0,150.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<path d="M295.0,48.0 L295.0,150.0" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a0)" stroke-linejoin="round"/>
+<text x="75.0" y="27.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal">PENDING_ACCEPTANCE</text>
+<text x="295.0" y="27.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal">ACCEPTED</text>
+<text x="515.0" y="27.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal">PREPARING</text>
+<text x="735.0" y="27.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal">READY</text>
+<text x="955.0" y="27.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal">COMPLETED</text>
+<text x="185.0" y="-9.0" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">accept</text>
+<text x="405.0" y="-9.0" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">start</text>
+<text x="625.0" y="-9.0" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">ready</text>
+<text x="845.0" y="-9.0" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">complete</text>
+<text x="15.0" y="177.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal">REJECTED</text>
+<text x="135.0" y="177.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal">EXPIRED</text>
+<text x="295.0" y="177.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="middle" font-weight="normal">CANCELLED</text>
+<text x="7.0" y="112.0" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" fill="#1e293b" text-anchor="end" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">reject</text>
+<text x="143.0" y="118.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">no answer</text>
+<text x="143.0" y="134.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">by acceptBy</text>
+<text x="303.0" y="112.0" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" font-size="12" fill="#1e293b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">cancel</text>
+<text x="0.0" y="232.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">acceptBy is 5 minutes after the order arrives by default.</text>
+<text x="0.0" y="248.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">A customer can cancel only while the order is waiting; after accept only the merchant can.</text>
+</svg>

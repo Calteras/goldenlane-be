@@ -41,7 +41,13 @@ type Watcher interface {
 const (
 	_heartbeat    = 15 * time.Second
 	_streamMaxAge = 10 * time.Minute
-	_writeWindow  = 10 * time.Second
+
+	// _safetyRead is how often an open stream re-reads the order when nothing woke it. Changes
+	// made through this instance wake the stream at once; this only catches one made through
+	// another instance, so it can be slow. A stream that re-read on every heartbeat would keep a
+	// serverless database awake for as long as a customer watches an order.
+	_safetyRead  = 2 * time.Minute
+	_writeWindow = 10 * time.Second
 )
 
 type ordersRoutes struct {
@@ -50,24 +56,32 @@ type ordersRoutes struct {
 	l         logger.Interface
 	heartbeat time.Duration
 	maxAge    time.Duration
+	safety    time.Duration
 }
 
 // OrdersOptions tunes streaming (tests use short timings).
 type OrdersOptions struct {
 	Heartbeat time.Duration
 	MaxAge    time.Duration
+
+	// SafetyRead is how often a stream re-reads the order without a wake-up.
+	SafetyRead time.Duration
 }
 
 // NewOrdersRoutes registers checkout, orders and reviews. Everything except reading an
 // outlet's reviews needs a signed-in customer.
 func NewOrdersRoutes(g fiber.Router, signedIn fiber.Handler, uc Orders, hub Watcher, l logger.Interface, opt OrdersOptions) {
-	r := &ordersRoutes{uc: uc, hub: hub, l: l, heartbeat: _heartbeat, maxAge: _streamMaxAge}
+	r := &ordersRoutes{uc: uc, hub: hub, l: l, heartbeat: _heartbeat, maxAge: _streamMaxAge, safety: _safetyRead}
 	if opt.Heartbeat > 0 {
 		r.heartbeat = opt.Heartbeat
 	}
 
 	if opt.MaxAge > 0 {
 		r.maxAge = opt.MaxAge
+	}
+
+	if opt.SafetyRead > 0 {
+		r.safety = opt.SafetyRead
 	}
 
 	g.Post("/checkouts", signedIn, r.checkout)
@@ -439,6 +453,7 @@ func (r *ordersRoutes) stream(c *fiber.Ctx) error {
 		}
 
 		lastSent := first.UpdatedAt
+		lastRead := time.Now()
 		ticker := time.NewTicker(r.heartbeat)
 		deadline := time.NewTimer(r.maxAge)
 
@@ -448,6 +463,8 @@ func (r *ordersRoutes) stream(c *fiber.Ctx) error {
 		refresh := func() bool {
 			ctx, stop := context.WithTimeout(context.Background(), 5*time.Second)
 			defer stop()
+
+			lastRead = time.Now()
 
 			o, err := r.uc.Order(ctx, customerID, first.ID)
 			if err != nil {
@@ -470,9 +487,9 @@ func (r *ordersRoutes) stream(c *fiber.Ctx) error {
 					return
 				}
 			case <-ticker.C:
-				// A comment keeps proxies open. Re-reading catches a change whose wake-up was
-				// missed while the listener reconnected.
-				if !write(": ping\n\n") || !refresh() {
+				// A comment keeps proxies open. A slow re-read catches a change made through
+				// another instance, whose wake-up this one never heard.
+				if !write(": ping\n\n") || (time.Since(lastRead) >= r.safety && !refresh()) {
 					return
 				}
 			case <-deadline.C:

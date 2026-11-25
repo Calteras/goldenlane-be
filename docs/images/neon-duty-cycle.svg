@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-24 -78 868 364" width="868" height="364" role="img"><title>How often the database is touched decides the bill</title><defs></defs><rect x="-24" y="-78" width="868" height="364" fill="#ffffff"/>
+<text x="0.0" y="-46.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e293b">How often the database is touched decides the bill</text>
+
+<rect x="250.0" y="18.0" width="420.0" height="26.0" rx="6" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+<rect x="250.0" y="18.0" width="420.0" height="26.0" rx="6" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+<rect x="250.0" y="62.0" width="420.0" height="26.0" rx="6" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+<rect x="250.0" y="62.0" width="139.9" height="26.0" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<rect x="250.0" y="106.0" width="420.0" height="26.0" rx="6" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+<rect x="250.0" y="106.0" width="70.1" height="26.0" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<rect x="250.0" y="150.0" width="420.0" height="26.0" rx="6" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+<rect x="250.0" y="150.0" width="34.9" height="26.0" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<rect x="250.0" y="194.0" width="420.0" height="26.0" rx="6" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+<rect x="250.0" y="194.0" width="3.0" height="26.0" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+
+<text x="250.0" y="-8.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="start" font-weight="normal">share of the month the compute is awake</text>
+<text x="820.0" y="-8.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="end" font-weight="normal">CU-hours and cost</text>
+<text x="0.0" y="36.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="start" font-weight="normal">Any poller under 5 minutes</text>
+<text x="626.0" y="36.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="start" font-weight="bold">100%</text>
+<text x="820.0" y="36.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="end" font-weight="normal">182 CU-h, $19.35</text>
+<text x="0.0" y="80.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="start" font-weight="normal">A job every 15 minutes</text>
+<text x="397.9" y="80.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="start" font-weight="bold">33.3%</text>
+<text x="820.0" y="80.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="end" font-weight="normal">61 CU-h, $6.45</text>
+<text x="0.0" y="124.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="start" font-weight="normal">A job every 30 minutes</text>
+<text x="328.1" y="124.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="start" font-weight="bold">16.7%</text>
+<text x="820.0" y="124.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="end" font-weight="normal">30 CU-h, $3.22</text>
+<text x="0.0" y="168.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="start" font-weight="normal">A job every hour</text>
+<text x="292.9" y="168.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="start" font-weight="bold">8.3%</text>
+<text x="820.0" y="168.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="end" font-weight="normal">15 CU-h, $1.61</text>
+<text x="0.0" y="212.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#1e293b" text-anchor="start" font-weight="normal">Once a night</text>
+<text x="261.0" y="212.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#1e293b" text-anchor="start" font-weight="bold">0.35%</text>
+<text x="820.0" y="212.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#1e293b" text-anchor="end" font-weight="normal">0.6 CU-h, $0.07</text>
+<text x="0.0" y="242.0" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" fill="#64748b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Every wake keeps the compute up for about 5 minutes (Neon's scale-to-zero timeout), so a job every 5 minutes or less is the same as always on.</text>
+<text x="0.0" y="257.5" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" fill="#64748b" text-anchor="start" font-weight="normal" stroke="#ffffff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">Compute only, at the 0.25 CU minimum on the Launch plan ($0.106 per CU-hour). Storage and bursts above 0.25 CU come on top.</text>
+</svg>

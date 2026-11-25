@@ -22,8 +22,8 @@ services:
       POS_ALLOWED_HOSTS: ${POS_ALLOWED_HOSTS:?Set the POS hostnames}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?Set this API's public address}
       PG_POOL_MAX: ${PG_POOL_MAX:-10}
-      INTEGRATION_WORKER_INTERVAL: ${INTEGRATION_WORKER_INTERVAL:-1s}
-      INTEGRATION_RECONCILE_INTERVAL: ${INTEGRATION_RECONCILE_INTERVAL:-15m}
+      WORKER_SWEEP_INTERVAL: ${WORKER_SWEEP_INTERVAL:-1h}
+      INTEGRATION_RECONCILE_INTERVAL: ${INTEGRATION_RECONCILE_INTERVAL:-1h}
       FEE_CUSTOMER_BPS: ${FEE_CUSTOMER_BPS:-250}
       FEE_MERCHANT_BPS: ${FEE_MERCHANT_BPS:-250}
       PAYMENT_WINDOW: ${PAYMENT_WINDOW:-15m}
@@ -46,6 +46,37 @@ services:
         max-size: '10m'
         max-file: '3'
 
+  # Optional: the Redis that carries signals between several API instances (see README, "Redis").
+  # One instance does not need it. Start it with:
+  #   sh scripts/compose.sh <stage> --profile redis up -d redis app
+  # and put REDIS_URL=redis://:<the password in secrets/<stage>/redis_password>@redis:6379/0 in
+  # secrets/<stage>/app.env. Nothing is stored in it, so it keeps no data and no disk.
+  redis:
+    profiles: ['redis']
+    image: redis:7-alpine
+    restart: unless-stopped
+    user: '1000:1000'
+    command:
+      - sh
+      - -c
+      - exec redis-server --requirepass "$$(cat /run/secrets/redis_password)" --save "" --appendonly no --maxmemory 64mb --maxmemory-policy noeviction
+    secrets:
+      - redis_password
+    working_dir: /tmp
+    tmpfs:
+      - /tmp:size=8m
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -a "$$(cat /run/secrets/redis_password)" --no-auth-warning ping | grep -q PONG']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 96m
+    cpus: 0.5
+    pids_limit: 50
+
   migrate:
     profiles: ['tools']
     image: ${MIGRATION_IMAGE:?Set the matching migration image tag or digest in .env.<stage>}
@@ -62,6 +93,8 @@ services:
     security_opt: ['no-new-privileges:true']
 
 secrets:
+  redis_password:
+    file: ${REDIS_PASSWORD_PATH:-./secrets/${APP_ENV:-staging}/redis_password}
   app_env:
     file: ${APP_SECRETS_PATH:?Set APP_SECRETS_PATH to a protected dotenv file}
   migration_env:

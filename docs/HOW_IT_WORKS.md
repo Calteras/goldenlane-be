@@ -33,25 +33,7 @@ Two things never happen: the customer app never calls the POS, and the vendor's 
 API. The two backends also never read each other's databases. Everything crosses as a signed HTTP
 message.
 
-```
- cashier / vendor staff                                              customer
-        │                                                               │
-        ▼                                                               ▼
- ┌─────────────────┐   1. events (POS → API): what changed      ┌────────────────────┐
- │       POS       │ ─────────────────────────────────────────▶ │   This API (Go)    │
- │    ansilum-be   │   2. reads (API → POS): outlets, menus     │                    │
- │                 │ ◀───────────────────────────────────────── │                    │
- │                 │   3. orders (API → POS): price, place,     │                    │
- │                 │ ◀───────────────────────────────────────── │                    │
- │                 │      cancel, status                        │                    │
- │                 │   4. fees (POS → API): reserve, report     │                    │
- │                 │ ─────────────────────────────────────────▶ │                    │
- └─────────────────┘                                            └─────────┬──────────┘
-                                                                          │ 5. charge, refund,
-                                                                          │    status (API → gateway)
-                                                                          ▼    callbacks (gateway → API)
-                                                                  Xendit / Midtrans
-```
+![The cast and the five channels between them](images/architecture.svg)
 
 ## 2. The rule that keeps it simple: one owner per fact
 
@@ -74,23 +56,7 @@ POS. That is what makes the lost-message cases in section 9 harmless.
 
 ### Creating the link
 
-```
- business owner          POS                               operator              This API
-      │  POST /link  ─────▶ │                                  │                      │
-      │  {platformUrl}      │ makes keyId (sfk_…) and          │                      │
-      │                     │ secret (sfs_…), stores the       │                      │
-      │ ◀──── keyId, secret │ secret encrypted, shows it ONCE  │                      │
-      │       (once)        │                                  │                      │
-      │  publish outlets ──▶│                                  │                      │
-      │                     │                    POST /v1/admin/merchants             │
-      │                     │                    {name, posTenantId, keyId, secret,   │
-      │                     │                     posBaseUrl}  ───────────────────────▶│
-      │                     │ ◀── signed GET /outlets (does the secret work?) ─────────│
-      │                     │ ──── answer ───────────────────────────────────────────▶│
-      │                     │                                  stores the secret       │
-      │                     │                                  encrypted, loads outlets│
-      │                     │                                  and menus at once       │
-```
+![Creating the link between a business and the platform](images/link-creation.svg)
 
 - One link per business. The `keyId` identifies it; the `secret` is shared by both sides.
 - A new secret (or a disconnect and reconnect) changes the credentials on the POS side only. The operator then replaces them here with `PUT /v1/admin/merchants/{id}/link`, which tests them against the POS first. Until then the platform keeps refusing the POS's events, and the POS shows the business as waiting.
@@ -131,21 +97,7 @@ Either would be enough most of the time; together they are robust.
 
 ### 4.1 Push: POS to API
 
-```
- something changes in the POS (menu edit, vendor opens the day, position, order status…)
-        │ in the SAME database transaction as the change
-        ▼
- outbox row  ────────────────────────────────────────────────┐
-        │                                                      │ commit, or nothing at all
-        ▼
- worker (every 5 s): lease up to 20 waiting events per link
-        │ POST {platformUrl}/v1/integrations/pos/events   (signed batch)
-        ▼
- This API: verify signature ─▶ store each event in the inbox ─▶ answer 204
-                                      │ (a duplicate event id is ignored)
-                                      ▼
-                        worker (every second while idle): apply events
-```
+![Push: how a change travels from the POS to the customer API](images/push-pipeline.svg)
 
 Why it is built this way:
 
@@ -162,6 +114,13 @@ Why it is built this way:
 - **Retries.** If this API is down or slow, the POS retries after 5 s, 15 s, 1 min, then every 5 min,
   for up to 24 hours. This API retries an event it could not apply after 5 s, 15 s, 1 min, then every
   5 min, up to 12 attempts.
+- **This API's workers do not poll.** A background worker runs when a commit made by this process
+  wrote rows (`pkg/postgres.CommitTracer` hears the commit and wakes every worker), when a retry,
+  lease or payment deadline it asked about falls due, and otherwise only on a slow sweep
+  (`WORKER_SWEEP_INTERVAL`, one hour by default). A wake-up that finds nothing writes nothing, so the
+  chain stops there. An idle service therefore sends no statements to the database, which lets a
+  serverless Postgres such as Neon suspend. Live order streams are woken the same way, from the
+  committed `pg_notify` of the change, instead of a `LISTEN` connection.
 - **How the POS notices changes.** Besides the events written by actions (orders, the working day,
   positions), it compares a fingerprint of each published outlet and its menu every
   `STREETFOOD_CHANGE_SCAN_SECONDS` (15 s). That way no existing service had to be modified to
@@ -186,7 +145,7 @@ An event type this API does not know is ignored, so the POS can add new ones wit
 
 ### 4.2 Pull: API from POS
 
-Every 15 minutes (`INTEGRATION_RECONCILE_INTERVAL`), and once when a merchant is registered, this API
+Every hour (`INTEGRATION_RECONCILE_INTERVAL`), and once when a merchant is registered, this API
 calls the POS for each merchant:
 
 1. `GET /app/terrapos/integrations/streetfood/outlets` returns every published outlet with its state,
@@ -200,6 +159,20 @@ platform's, so a slow reply cannot overwrite something newer that arrived by eve
 ever compared with POS times.
 
 Pull is why a lost event, a platform outage or a new deployment never needs manual repair.
+
+### 4.3 What this API answers from memory
+
+What customers browse changes rarely and is read constantly, so it is not read from Postgres on every
+request:
+
+| Kept in memory | Reloaded when | Why it is safe |
+|---|---|---|
+| The listed outlets with their hours, position and session, their ratings, and the menus customers have opened (`discovery.Cached`) | A commit writes `outlets`, `outlet_hours`, `outlet_menus`, `menu_items`, `merchants`, `merchant_gateways` or `reviews` (seen by the connection tracer, and by Redis from another instance), but at most every 5 seconds; and at least every 10 minutes | Distances, the radius, the live-position cut-off, text search and ordering follow the SQL they replace; whether an outlet is open and whether a position is stale are still judged at the moment of each request |
+| A signed-in customer's account | After 5 minutes, and at once when the account is changed or deleted (here, and on other instances with Redis) | Firebase already proved who is calling; a suspended or deleted account is refused within that time |
+
+A customer with the map open therefore sends the database no statements. Position events still arrive
+as writes (the POS publishes at most every 15 seconds per moving vendor), so while vendors move the
+snapshot reloads about every 5 seconds, which is also how late a customer can see a new position.
 
 ## 5. The tracking engine, end to end
 
@@ -234,20 +207,7 @@ Fixed kiosks have no live position: customers simply see the address coordinates
 
 ### 5.2 A GPS reading, step by step
 
-```
- vendor phone ──(every 15–120 s, batched when offline)──▶ POS  POST location/pings
-                                                           │
-                          1. judge every reading on its own (one bad reading never
-                             throws away the rest of a queued batch)
-                          2. store all accepted readings in the trail (owner's reports)
-                          3. update the outlet's "current position" from the newest
-                             trusted reading
-                          4. decide whether to publish it (the throttle)
-                          5. answer the phone with how often to send next
-                                                           │
-                                                           ▼
-                                         outbox: outlet.location.updated
-```
+![A GPS reading, step by step](images/gps-reading.svg)
 
 **Judging a reading.** Each reading in a batch (up to 100) is classified:
 
@@ -286,16 +246,7 @@ fields (mode `SPOT`). For `HIDDEN`: nothing. When the day ends or sharing become
 
 ### 5.3 What this API does with it
 
-```
- outlet.session.changed ──▶ outlets.session_* columns   (active, id, sharing, spot / anchor)
- outlet.location.updated ─▶ outlets.cur_* columns        (only if recordedAt is newer than the
-                                                          current position AND newer than the last
-                                                          "cleared")
- outlet.location.cleared ─▶ clears cur_*, remembers when
-            │
-            ▼
-   recompute "where do customers find it": outlets.pos_lat / pos_lng / pos_mode   (indexed)
-```
+![What the customer API does with the events](images/position-rules.svg)
 
 The rules for "where customers find an outlet" are one function (`Outlet.DerivePosition`) that mirrors
 how the POS presents it:
@@ -316,8 +267,9 @@ only" would have had no coordinates on the platform side at all.
 
 ### 5.4 What customers see
 
-`GET /v1/outlets/nearby?lat=…&lng=…&radius_m=…` finds published outlets by distance using
-`earthdistance` and a GiST index on `pos_lat`, `pos_lng`. Each outlet carries:
+`GET /v1/outlets/nearby?lat=…&lng=…&radius_m=…` finds published outlets by great-circle distance (on the
+sphere `earthdistance` uses) in the in-memory snapshot of section 4.3. The SQL form of the same search
+(`earth_box` and a GiST index on `pos_lat`, `pos_lng`) is kept in `persistent.NearbyOutlets`. Each outlet carries:
 
 ```json
 "location": { "mode": "LIVE", "latitude": -6.2010, "longitude": 106.8001,
@@ -339,19 +291,13 @@ spots never go stale. `isOpenNow` and `acceptingOrders` are computed from the wo
 day, the weekly hours and the outlet's status, with the same rules as the POS, so a mobile vendor with
 no open day is never "open".
 
-The customer app **polls** `nearby` (and `outlets/{id}`) to move the dot. There is no live stream of
+The customer app **polls** `nearby` (and `outlets/{id}`) to move the dot; these are answered from
+memory (section 4.3). There is no live stream of
 positions yet; the server-sent stream in this API is for orders only.
 
 ### 5.5 One position's journey, with time
 
-```
-t = 0.0 s   vendor phone sends a reading; the POS judges and stores it
-t = 0.0 s   POS: ≥15 s since the last publication and moved ≥20 m  → writes the outbox event
-t ≤ 5 s     POS worker picks it up and POSTs the signed batch
-t + ~50 ms  this API verifies, stores it in the inbox, answers 204
-t ≤ 1 s     this API's worker applies it; pos_lat / pos_lng are updated
-            → the next GET /v1/outlets/nearby shows the new position
-```
+![One position's journey, with time](images/position-timeline.svg)
 
 In practice a customer sees a moving cart a few seconds behind the vendor, updated at most every
 15 seconds, and only when the cart actually moved.
@@ -366,23 +312,7 @@ trails are deleted after 90 days (`STREETFOOD_LOCATION_RETENTION_DAYS`).
 
 ### 6.1 Pay at pickup
 
-```
- customer ─POST /v1/checkouts──▶ This API                                POS                  cashier
-   Idempotency-Key             1. check the cart against the stored
-                                  menu (friendly early errors)
-                               2. store the order CREATED (unique per customer + key)
-                               3. ─ signed POST /orders ─────────────▶ 4. price it (the only price
-                                    {platformOrderId, items,              authority), check the outlet is
-                                     expectedTotalMinor, payment}         open, store it PENDING_ACCEPTANCE
-                               ◀──────────── pricing, acceptBy ───────  ─ socket / push ───────────▶ new order
-                               5. store the POS's answer                                           accepts
- customer ◀── order, PENDING ──                                       ◀──────── accept ───────────────┘
-                                                                      6. status ACCEPTED, version 2
-                               ◀── event order.status.changed ─────── (outbox)
-                               7. apply if version is newer; queue ONE
-                                  push per (order, status); wake streams
- customer ◀── push + SSE ─────  …start (stock is consumed), ready, complete (the sale is recorded)
-```
+![An order paid at pickup](images/order-pickup.svg)
 
 - **Idempotency, twice.** The customer's `Idempotency-Key` makes a repeated checkout return the same
   order. The `platformOrderId` makes a repeated submission to the POS return the same POS order. A
@@ -396,7 +326,7 @@ trails are deleted after 90 days (`STREETFOOD_LOCATION_RETENTION_DAYS`).
 - **Status updates are versioned.** Each POS order carries a version that rises with every change; a
   status is applied only if its version is newer, so late or repeated events change nothing. If an
   event is lost, a worker re-reads open orders from the POS when nothing has been heard about them for
-  2 minutes.
+  2 minutes. It checks whenever the service is doing other work, and at least every sweep.
 - **Cancel.** A customer can cancel only before the merchant accepts. Afterwards only the merchant can.
   If the customer cancels while the order is being sent, the order is taken back at the POS.
 - **If the merchant never answers**, the POS expires the order at its `acceptBy` time (5 minutes by
@@ -412,19 +342,7 @@ merchant's reports include online orders.
 The customer's money goes **straight to the merchant's own gateway account**. The platform never
 holds it.
 
-```
- customer ─checkout, payment ONLINE─▶ This API ──signed POST /orders/quote──▶ POS prices it (stores nothing)
-                                       │ ◀──────── pricing ────────────────────
-                                       │ stores the order UNPAID, 15-minute deadline
-                                       │ ── create invoice for  total + 2.5% ─▶ gateway (merchant's account)
- customer ◀── payUrl ──────────────────┤ ◀──────────── page ───────────────────
- customer pays on the gateway's page ──────────────────────────────────────────▶ gateway
-                                       │ ◀── callback (authenticated, then IGNORED for its content)
-                                       │ ── ask the gateway for the payment's real state ─▶
-                                       │ ◀──────────── PAID ───────────────────
-                                       │ order UNPAID → CREATED; then, as in 6.1 but marked PREPAID:
-                                       │ ── signed POST /orders  payment: PREPAID, reference ─▶ POS
-```
+![An order paid online](images/online-payment.svg)
 
 Points that matter:
 
@@ -451,17 +369,7 @@ Points that matter:
 Fees are recorded here, and collected by the POS as part of the merchant's **automatic monthly
 subscription charge**.
 
-```
- order completed ──▶ this API's ledger:  online order: customer fee + merchant fee
-                                         pay-at-pickup order: merchant fee (rate fixed when ordered)
-
- a renewal is due (POS, ~24 h before the period ends, card on file):
-   POS ─signed POST /v1/integrations/pos/fees/reserve {billingRef}─▶ this API sets the open fees aside
-   POS ◀── lines and total ─────────────────────────────────────── for that billing period
-   POS creates the renewal order: plan price + fees, and charges the saved card ONCE (Midtrans)
-   payment recorded ──▶ in the SAME database transaction the POS writes a billing.fees.settled event
-   POS worker ─── event ───▶ this API marks exactly those entries collected, against the invoice number
-```
+![How the platform's fees are collected](images/fee-collection.svg)
 
 - **Reserve is repeatable.** The same period always gets the same entries and total, however often
   it is asked and whatever accrues meanwhile; a period already collected gets nothing more. Entries

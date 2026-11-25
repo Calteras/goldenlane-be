@@ -100,3 +100,80 @@ func (s *Store) PublicMenu(ctx context.Context, outletID string) (*entity.Menu, 
 
 	return &menu, nil
 }
+
+// ListPublicOutlets returns every outlet customers may see, for the discovery cache.
+func (s *Store) ListPublicOutlets(ctx context.Context) ([]*entity.Outlet, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT `+outletColumns+outletFrom+`
+		WHERE o.published AND o.active AND m.status = 'active'`)
+	if err != nil {
+		return nil, fmt.Errorf("list public outlets: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*entity.Outlet
+
+	for rows.Next() {
+		o, err := scanOutlet(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan public outlet: %w", err)
+		}
+
+		out = append(out, o)
+	}
+
+	return out, rows.Err()
+}
+
+// OutletItemTexts returns, per outlet, its menu item names in lower case joined by a newline:
+// what a text search looks through.
+func (s *Store) OutletItemTexts(ctx context.Context) (map[string]string, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT outlet_id::text, string_agg(lower(name), E'\n')
+		FROM menu_items GROUP BY outlet_id`)
+	if err != nil {
+		return nil, fmt.Errorf("item texts: %w", err)
+	}
+	defer rows.Close()
+
+	out := map[string]string{}
+
+	for rows.Next() {
+		var id, text string
+		if err := rows.Scan(&id, &text); err != nil {
+			return nil, err
+		}
+
+		out[id] = text
+	}
+
+	return out, rows.Err()
+}
+
+// AllRatings returns the rating of every reviewed outlet.
+func (s *Store) AllRatings(ctx context.Context) (map[string]entity.Rating, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT outlet_id::text, round(avg(rating)::numeric, 1)::float8, count(*)::int
+		FROM reviews GROUP BY outlet_id`)
+	if err != nil {
+		return nil, fmt.Errorf("all ratings: %w", err)
+	}
+	defer rows.Close()
+
+	out := map[string]entity.Rating{}
+
+	for rows.Next() {
+		var (
+			id string
+			r  entity.Rating
+		)
+
+		if err := rows.Scan(&id, &r.Average, &r.Count); err != nil {
+			return nil, err
+		}
+
+		out[id] = r
+	}
+
+	return out, rows.Err()
+}

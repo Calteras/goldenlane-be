@@ -578,26 +578,3 @@ func (s *Store) TouchChecked(ctx context.Context, id string) error {
 
 	return err
 }
-
-// ListenOrderUpdates calls fn with the id of every order that changes, on any instance,
-// until ctx ends or the connection fails.
-func (s *Store) ListenOrderUpdates(ctx context.Context, fn func(orderID string)) error {
-	conn, err := s.pool.Acquire(ctx)
-	if err != nil {
-		return fmt.Errorf("listen: %w", err)
-	}
-	defer conn.Release()
-
-	if _, err := conn.Exec(ctx, `LISTEN order_updates`); err != nil {
-		return fmt.Errorf("listen: %w", err)
-	}
-
-	for {
-		n, err := conn.Conn().WaitForNotification(ctx)
-		if err != nil {
-			return err
-		}
-
-		fn(n.Payload)
-	}
-}
