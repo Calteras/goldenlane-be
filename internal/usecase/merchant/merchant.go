@@ -34,6 +34,7 @@ type Store interface {
 	LinkByMerchant(ctx context.Context, merchantID string) (entity.Link, error)
 	Suspend(ctx context.Context, merchantID string) error
 	UpdateLink(ctx context.Context, merchantID, keyID, secretEnc, baseURL string) (entity.Merchant, error)
+	MerchantByTenant(ctx context.Context, posTenantID string) (entity.Merchant, error)
 }
 
 // Reconciler pulls a new merchant's outlets and menus right away.
@@ -44,6 +45,8 @@ type Reconciler interface {
 // Verifier proves credentials work by reading the merchant's published outlets.
 type Verifier interface {
 	Verify(ctx context.Context, cred pos.Credentials) error
+	// Identify also returns the tenant the credentials belong to.
+	Identify(ctx context.Context, cred pos.Credentials) (string, error)
 }
 
 // Settings limits where a POS may be.
@@ -124,6 +127,60 @@ func (u *UseCase) Register(ctx context.Context, in Registration) (entity.Merchan
 	}
 
 	return m, nil
+}
+
+// Connect is how a business joins by itself, from its own POS, without an operator. The
+// credentials are the proof: the POS must accept them and must name the same tenant. A business
+// that is already registered gets its credentials replaced (a new secret, a reconnect), so the
+// call can be repeated safely. A suspended business cannot come back this way. created tells
+// the two outcomes apart.
+func (u *UseCase) Connect(ctx context.Context, in Registration) (m entity.Merchant, created bool, err error) {
+	base, err := u.checkBaseURL(in.POSBaseURL)
+	if err != nil {
+		return entity.Merchant{}, false, err
+	}
+
+	in.POSTenantID = strings.TrimSpace(in.POSTenantID)
+
+	switch {
+	case in.POSTenantID == "" || len(in.POSTenantID) > 100:
+		return entity.Merchant{}, false, fmt.Errorf("%w: posTenantId is required", ErrInvalid)
+	case !keyIDRe.MatchString(in.KeyID):
+		return entity.Merchant{}, false, fmt.Errorf("%w: keyId is not a POS key id", ErrInvalid)
+	case !strings.HasPrefix(in.Secret, "sfs_") || len(in.Secret) > 200:
+		return entity.Merchant{}, false, fmt.Errorf("%w: secret is not a POS secret", ErrInvalid)
+	}
+
+	cred := pos.Credentials{BaseURL: base, KeyID: in.KeyID, Secret: in.Secret}
+
+	tenant, err := u.verifier.Identify(ctx, cred)
+	if err != nil {
+		return entity.Merchant{}, false, fmt.Errorf("%w: %s", ErrUnverified, err.Error())
+	}
+
+	// Without this, valid credentials of one business could be used to take over another.
+	if !strings.EqualFold(tenant, in.POSTenantID) {
+		return entity.Merchant{}, false, fmt.Errorf("%w: the POS does not confirm this tenant", ErrUnverified)
+	}
+
+	existing, err := u.store.MerchantByTenant(ctx, in.POSTenantID)
+
+	switch {
+	case err == nil:
+		if existing.Status != "active" {
+			return entity.Merchant{}, false, fmt.Errorf("%w: this business is suspended", ErrInvalid)
+		}
+
+		m, err = u.UpdateLink(ctx, existing.ID, LinkUpdate{KeyID: in.KeyID, Secret: in.Secret, POSBaseURL: in.POSBaseURL})
+
+		return m, false, err
+	case errors.Is(err, entity.ErrNotFound):
+		m, err = u.Register(ctx, in)
+
+		return m, err == nil, err
+	default:
+		return entity.Merchant{}, false, err
+	}
 }
 
 // LinkUpdate is a registered business's new POS credentials, after it created a new secret or

@@ -214,7 +214,16 @@ curl -X PUT  $POS/outlets/<outletId>/publication -d '{"enabled":true}' …
 each.) The secret is shown once; it is the shared key for everything below. Without `OPEN` the
 outlet follows its weekly hours (`PUT $POS/outlets/<outletId>/hours`).
 
-### C. Register the business here (as the operator)
+### C. Register the business here
+
+Normally nobody does this by hand. The owner taps **Connect to Goldenlane** in the POS app (Map
+tab), and the POS calls `POST /v1/merchants/connect` itself with the same body as below. That route
+needs no operator token: the POS must accept the credentials and confirm the same `posTenantId`
+(the `tenantId` field of its `GET integrations/streetfood/outlets` answer), and only hosts in
+`POS_ALLOWED_HOSTS` are contacted. Repeating it with new credentials updates the merchant; a
+suspended merchant cannot come back this way. It is rate limited to 20 calls a minute per address.
+
+The operator route below still works, for example to register a business by hand:
 
 ```sh
 curl -X POST localhost:8080/v1/admin/merchants \

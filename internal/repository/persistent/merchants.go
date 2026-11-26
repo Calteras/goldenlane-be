@@ -69,6 +69,21 @@ func (s *Store) UpdateLink(ctx context.Context, merchantID, keyID, secretEnc, ba
 	return m, nil
 }
 
+// MerchantByTenant finds the merchant registered for a POS tenant.
+func (s *Store) MerchantByTenant(ctx context.Context, posTenantID string) (entity.Merchant, error) {
+	var m entity.Merchant
+
+	err := s.pool.QueryRow(ctx, `
+		SELECT m.id, m.pos_tenant_id, m.name, m.status, l.key_id, l.pos_base_url, l.status, m.created_at
+		FROM merchants m JOIN merchant_links l ON l.merchant_id = m.id WHERE m.pos_tenant_id = $1`, posTenantID,
+	).Scan(&m.ID, &m.POSTenantID, &m.Name, &m.Status, &m.KeyID, &m.POSBaseURL, &m.LinkStatus, &m.CreatedAt)
+	if err != nil {
+		return entity.Merchant{}, notFound(err)
+	}
+
+	return m, nil
+}
+
 // ListMerchants returns every merchant with its link status (never the secret).
 func (s *Store) ListMerchants(ctx context.Context) ([]entity.Merchant, error) {
 	rows, err := s.pool.Query(ctx, `

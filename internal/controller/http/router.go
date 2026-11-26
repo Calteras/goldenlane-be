@@ -61,5 +61,6 @@ func NewRouter(app *fiber.App, cfg *config.Config, l logger.Interface, d Depende
 	v1.NewDiscoveryRoutes(api, d.Discovery, l)
 	v1.NewMeRoutes(api, middleware.Customer(d.Auth), d.Profiles, l)
 	v1.NewOrdersRoutes(api, middleware.Customer(d.Auth), d.Orders, d.Hub, l, d.Streaming)
+	v1.NewConnectRoutes(api, d.Merchants, l)
 	v1.NewAdminRoutes(api.Group("/admin", middleware.Admin(cfg.Admin.Token)), d.Merchants, d.Payments, l)
 }

@@ -193,6 +193,19 @@ func (c *Client) Verify(ctx context.Context, cred Credentials) error {
 	return err
 }
 
+// Identify proves credentials work and returns the tenant id the POS issued them for. A POS that
+// does not report it yields an empty string, which callers must treat as unproven.
+func (c *Client) Identify(ctx context.Context, cred Credentials) (string, error) {
+	data, err := get[struct {
+		TenantID string `json:"tenantId"`
+	}](ctx, c, cred, _prefix+"/outlets")
+	if err != nil {
+		return "", err
+	}
+
+	return data.TenantID, nil
+}
+
 // SubmitRequest is an order to send to the POS (contract section 3.3). The POS prices it.
 type SubmitRequest struct {
 	PlatformOrderID    string         `json:"platformOrderId"`

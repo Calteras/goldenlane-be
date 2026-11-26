@@ -135,14 +135,29 @@ func (u *UseCase) Receive(ctx context.Context, keyID, timestamp, signature, meth
 }
 
 // authenticate proves a request was signed by the merchant's POS and returns its link.
+//
+// The caller always gets the same ErrUnauthorized, so nobody can probe which key ids exist. The
+// real reason is logged here (never the secret or the signature), because "401" alone cannot tell
+// an unregistered key from a changed secret or a clock that is off. A storage failure is not a
+// credential problem: it is returned as such, so the POS sees a server error and retries.
 func (u *UseCase) authenticate(ctx context.Context, keyID, timestamp, signature, method, path string, body []byte) (entity.Link, error) {
 	link, err := u.store.LinkByKeyID(ctx, keyID)
 	if err != nil {
+		if !errors.Is(err, entity.ErrNotFound) {
+			return entity.Link{}, fmt.Errorf("look up key: %w", err)
+		}
+
+		u.log.Warn("pos request refused: no active link for this key id (not registered, replaced by a new secret, or the merchant is suspended)",
+			"keyId", keyID, "path", path)
+
 		return entity.Link{}, entity.ErrUnauthorized
 	}
 
 	secret, err := u.box.Open(link.SecretEnc, link.MerchantID)
 	if err != nil {
+		u.log.Error("pos request refused: the stored secret cannot be decrypted (was ENCRYPTION_KEY changed?)",
+			"keyId", keyID, "merchant", link.MerchantID)
+
 		return entity.Link{}, entity.ErrUnauthorized
 	}
 
@@ -151,6 +166,13 @@ func (u *UseCase) authenticate(ctx context.Context, keyID, timestamp, signature,
 	}
 
 	if err := signing.Verify(secret, timestamp, signature, method, path, body, u.now()); err != nil {
+		reason := "the signature does not match: the POS holds a different secret than the platform"
+		if errors.Is(err, signing.ErrTimestampSkew) {
+			reason = "the timestamp is more than 5 minutes from this server's clock"
+		}
+
+		u.log.Warn("pos request refused: "+reason, "keyId", keyID, "merchant", link.MerchantID, "path", path)
+
 		return entity.Link{}, entity.ErrUnauthorized
 	}
 

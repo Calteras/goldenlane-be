@@ -17,6 +17,7 @@ type Merchants interface {
 	List(ctx context.Context) ([]entity.Merchant, error)
 	Suspend(ctx context.Context, id string) error
 	UpdateLink(ctx context.Context, id string, in merchant.LinkUpdate) (entity.Merchant, error)
+	Connect(ctx context.Context, in merchant.Registration) (entity.Merchant, bool, error)
 }
 
 type adminRoutes struct {

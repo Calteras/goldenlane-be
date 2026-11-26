@@ -20,6 +20,8 @@ type FakePOS struct {
 	Snapshots map[string]*entity.POSSnapshot
 	Err       error
 	Calls     []string
+	// TenantID is what Identify reports as the tenant the credentials belong to.
+	TenantID string
 }
 
 // Outlets implements the POS reader.
@@ -60,6 +62,15 @@ func (f *FakePOS) Verify(ctx context.Context, cred pos.Credentials) error {
 	_, _, err := f.Outlets(ctx, cred)
 
 	return err
+}
+
+// Identify implements the tenant proof used when a business connects itself.
+func (f *FakePOS) Identify(ctx context.Context, cred pos.Credentials) (string, error) {
+	if _, _, err := f.Outlets(ctx, cred); err != nil {
+		return "", err
+	}
+
+	return f.TenantID, nil
 }
 
 // CallCount reports how many calls started with prefix.

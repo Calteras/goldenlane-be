@@ -405,6 +405,71 @@ func TestAdminMerchants(t *testing.T) {
 	require.Equal(t, 404, status)
 }
 
+// A business joins from its own POS, with no operator token.
+func TestConnectMerchant(t *testing.T) {
+	a := newAPI(t)
+	connect := map[string]any{
+		"name": "Toko Kopi", "posTenantId": "tenant-9", "keyId": "sfk_bbbbbbbbbbbbbbbbbbbbbbbb",
+		"secret": "sfs_connect_secret", "posBaseUrl": "https://pos.example.com",
+	}
+	with := func(patch map[string]any) map[string]any {
+		out := map[string]any{}
+		for k, v := range connect {
+			out[k] = v
+		}
+
+		for k, v := range patch {
+			out[k] = v
+		}
+
+		return out
+	}
+
+	// The POS must confirm the same tenant: valid credentials of another business are not enough.
+	a.e.POS.TenantID = "tenant-other"
+	status, body, _ := a.do("POST", "/v1/merchants/connect", connect, nil)
+	require.Equal(t, 422, status)
+	require.Equal(t, "LINK_UNVERIFIED", body["code"])
+
+	a.e.POS.TenantID = ""
+	status, body, _ = a.do("POST", "/v1/merchants/connect", connect, nil)
+	require.Equal(t, 422, status, "a POS that does not name the tenant proves nothing")
+	require.Equal(t, "LINK_UNVERIFIED", body["code"])
+
+	a.e.POS.TenantID = "tenant-9"
+	a.e.POS.Err = errors.New("401")
+	status, _, _ = a.do("POST", "/v1/merchants/connect", connect, nil)
+	require.Equal(t, 422, status)
+	a.e.POS.Err = nil
+
+	status, body, _ = a.do("POST", "/v1/merchants/connect", with(map[string]any{"posBaseUrl": "https://evil.example.org"}), nil)
+	require.Equal(t, 422, status)
+	require.Equal(t, "MERCHANT_INVALID", body["code"])
+
+	status, body, _ = a.do("POST", "/v1/merchants/connect", connect, nil)
+	require.Equal(t, 201, status)
+	require.NotContains(t, mustJSON(t, body), "sfs_connect_secret")
+
+	merchantID := body["data"].(map[string]any)["id"].(string)
+
+	// Repeating it, or coming back with a new secret, updates the same merchant.
+	status, body, _ = a.do("POST", "/v1/merchants/connect", with(map[string]any{
+		"keyId": "sfk_cccccccccccccccccccccccc", "secret": "sfs_rotated_secret",
+	}), nil)
+	require.Equal(t, 200, status)
+	require.Equal(t, merchantID, body["data"].(map[string]any)["id"])
+	require.Equal(t, "sfk_cccccccccccccccccccccccc", body["data"].(map[string]any)["keyId"])
+
+	// A suspended business stays suspended.
+	status, _, _ = a.do("DELETE", "/v1/admin/merchants/"+merchantID, nil, bearer(adminToken))
+	require.Equal(t, 204, status)
+	status, body, _ = a.do("POST", "/v1/merchants/connect", with(map[string]any{
+		"keyId": "sfk_dddddddddddddddddddddddd", "secret": "sfs_again_secret",
+	}), nil)
+	require.Equal(t, 422, status)
+	require.Equal(t, "MERCHANT_INVALID", body["code"])
+}
+
 func mustJSON(t *testing.T, v any) string {
 	t.Helper()
 
