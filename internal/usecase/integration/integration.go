@@ -62,6 +62,8 @@ type POS interface {
 // OrderMirror applies order status changes the POS reports.
 type OrderMirror interface {
 	ApplyEvent(ctx context.Context, version int, data json.RawMessage) error
+	// ApplyRating records a vendor's rating of a customer after an order.
+	ApplyRating(ctx context.Context, merchantID string, data json.RawMessage) error
 }
 
 // UseCase is the integration service.
@@ -337,6 +339,12 @@ func (u *UseCase) apply(ctx context.Context, row entity.InboxRow) error {
 		}
 
 		return u.orders.ApplyEvent(ctx, row.Version, e.Data)
+	case "customer.rated":
+		if u.orders == nil {
+			return nil
+		}
+
+		return u.orders.ApplyRating(ctx, link.MerchantID, e.Data)
 	default:
 		// Unknown types are ignored so the POS can add events without breaking us.
 		return nil

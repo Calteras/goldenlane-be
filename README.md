@@ -1,6 +1,6 @@
-# StreetFood customer API
+# Goldenlane customer API
 
-The backend for the customer app of StreetFood OS. Customers find street food vendors and kiosks
+The backend for the Goldenlane customer app (the customer side of StreetFood OS). Customers find street food vendors and kiosks
 near them, see what they sell, order, pay, and watch their order progress. Merchants keep using
 their POS (`ansilum-be`). This service holds a copy of what the POS publishes and serves it to
 customers; the POS stays the source of truth.
@@ -254,6 +254,15 @@ payments) and scores them, so vendors and operators can tell reliable customers 
   (`{"watchAt": 20, "restrictedAt": 50}`). A row that does not parse is ignored.
 - A prepaid order the vendor marks as a no-show is **not refunded automatically**: the vendor made the
   food. A person can still decide otherwise.
+- **Vendors are told a label, never a score.** Each order reaches the POS with `customerTrust`: new,
+  reliable, caution or prepay required, and a few facts (orders completed, not picked up in 90 days).
+  The platform refuses no order because of it. A vendor can choose, per outlet, to ask such customers
+  to pay in the app or to refuse them, and can block a customer outright. Set `TRUST_VENDOR_LABELS=false`
+  to stop sending it.
+- **One tap rates a customer.** After a sale the vendor taps a thumb; nothing to fill in. A no-show is
+  already a thumbs down, so it is never counted twice, and one merchant can add only so much to a
+  score. A merchant whose own numbers stand out from the others' (it calls far more no-shows) is
+  believed less: `GET /v1/admin/trust/vendors` shows how merchants compare.
 - Every order gets a four digit pickup code the customer shows at the cart. The POS finds the order
   by it, and a handover against it is recorded as proof the customer came.
 
@@ -330,6 +339,7 @@ All settings come from the environment (see `.env.example`). Required ones stop 
 | `PAYMENT_RETURN_URL` | unset | where gateways send customers after paying (an app deep link) |
 | `XENDIT_BASE_URL`, `MIDTRANS_SNAP_URL`, `MIDTRANS_API_URL` | the real gateways | point at a stub for tests or staging |
 | `METRICS_ENABLED` | `true` | Prometheus metrics at `/metrics` |
+| `TRUST_VENDOR_LABELS` | `true` | Send each vendor a label for the customer with every order (new, reliable, caution, prepay required) and a few facts. `false` hides them; scores are computed either way |
 
 ### Every setting in detail
 
@@ -482,7 +492,7 @@ half a minute late). Locally it can be `http://localhost:8080`, or a tunnel addr
 gateways.
 
 **`PAYMENT_RETURN_URL`**: where gateways send the customer's browser after paying or failing: a deep
-link into the customer app (for example `streetfood://payment-result`) or an https page that opens
+link into the customer app (for example `goldenlane://payment-result`, the scheme the app registers) or an https page that opens
 it. Take it from your mobile app's URL scheme or universal-link configuration. Optional: without it
 the customer stays on the gateway's own page.
 
@@ -564,19 +574,19 @@ database for each, and never point staging at the production database.
 1. In the [Neon console](https://console.neon.tech), create a project (pick the region closest to
    where the API runs, and PostgreSQL 15 or newer).
 2. Use one of these layouts:
-   - **Two projects**, `streetfood-staging` and `streetfood-production`. Strongest isolation, separate
+   - **Two projects**, `goldenlane-staging` and `goldenlane-production`. Strongest isolation, separate
      credentials and billing views. Recommended.
    - **One project, two branches** (`production` is the default branch, `staging` a child of it).
      Cheaper, but a child branch starts with a copy of the parent's data, so create `staging` before
      production holds real customer data, or create it from an empty point in time.
-3. Create a database named `streetfood` and a dedicated role for the API in each. Do not use the
+3. Create a database named `goldenlane` and a dedicated role for the API in each. Do not use the
    project's owner role for the running API.
 4. Copy two connection strings from **Connect** in each environment:
 
 | Name | Neon setting | Looks like | Used by |
 |---|---|---|---|
-| Direct | "Connection pooling" off | `postgres://user:pass@ep-xxxx.<region>.aws.neon.tech/streetfood?sslmode=require` | migrations |
-| Pooled | "Connection pooling" on | `postgres://user:pass@ep-xxxx-pooler.<region>.aws.neon.tech/streetfood?sslmode=require` | the API (`PG_URL`) |
+| Direct | "Connection pooling" off | `postgres://user:pass@ep-xxxx.<region>.aws.neon.tech/goldenlane?sslmode=require` | migrations |
+| Pooled | "Connection pooling" on | `postgres://user:pass@ep-xxxx-pooler.<region>.aws.neon.tech/goldenlane?sslmode=require` | the API (`PG_URL`) |
 
 Keep `sslmode=require`; Neon refuses unencrypted connections. Migrations use the direct string
 because they run DDL and should not go through PgBouncer.
@@ -599,6 +609,10 @@ must come from the same commit.
 export IMAGE_TAG="$(git rev-parse --short=12 HEAD)"
 export REGISTRY="dolanddev"          # your Docker Hub user or organisation, or a private registry
 
+# Both must print something, or the next commands fail with: invalid tag "/goldenlane-api:".
+# That means one of the two exports above was not run in this shell (each new SSH session starts empty).
+echo "$REGISTRY/goldenlane-api:$IMAGE_TAG"      # for example dolanddev/goldenlane-api:1a2b3c4d5e6f
+
 docker build --target production --build-arg APP_VERSION="$IMAGE_TAG" \
   -t "$REGISTRY/goldenlane-api:$IMAGE_TAG" .
 
@@ -609,6 +623,11 @@ docker login                         # once; add the registry host for a private
 docker push "$REGISTRY/goldenlane-api:$IMAGE_TAG"
 docker push "$REGISTRY/goldenlane-migrate:$IMAGE_TAG"
 ```
+
+**Or in one command:** `make release` does all of the above for the commit you are on. It needs no
+`export`: `REGISTRY` defaults to `dolanddev`, `IMAGE_TAG` to the commit, and `PLATFORM` to
+`linux/amd64`. Override any of them, for example `make release REGISTRY=myorg`. It refuses to run with
+uncommitted changes or an empty `REGISTRY`/`IMAGE_TAG`.
 
 Build from a clean checkout of the commit you mean to release (`git status` shows nothing). If you
 build on an Apple Silicon Mac for a Linux amd64 server, add `--platform linux/amd64` to both builds.
@@ -637,7 +656,7 @@ The host pulls them (`docker login` there too for a private repository).
 the same builds and pushes `$CI_REGISTRY_IMAGE/api:<sha>` and `$CI_REGISTRY_IMAGE/migrate:<sha>`
 (`<sha>` is the first 12 characters of the commit) to the project's GitLab container registry.
 Use those references as `APP_IMAGE` and `MIGRATION_IMAGE`, for example
-`registry.gitlab.com/<group>/streetfood-customer-api/api:<sha>`, and `docker login registry.gitlab.com`
+`registry.gitlab.com/<group>/goldenlane-be/api:<sha>`, and `docker login registry.gitlab.com`
 on the host with a deploy token that has `read_registry`.
 
 ### 3. Create the configuration and Docker secrets
@@ -658,7 +677,7 @@ separate files, so the API never holds the DDL-capable database role.
 On the deploy host:
 
 ```sh
-git clone <repo> && cd streetfood-customer-api      # or copy docker-compose.deploy.yml, scripts/, docker/
+git clone <repo> && cd goldenlane-be                 # or copy docker-compose.deploy.yml, scripts/, docker/
 
 sh scripts/new-secrets.sh staging        # creates secrets/staging/{app,migration}.env with fresh random
                                          # ADMIN_API_TOKEN and ENCRYPTION_KEY (never overwrites)
@@ -675,7 +694,8 @@ the production `ENCRYPTION_KEY` in your password manager: without it every store
 and gateway key is unreadable.
 
 `scripts/compose.sh <staging|production> …` runs `docker compose` for exactly one stage
-(project `streetfood-<stage>`). It stops early when a secret file is missing, readable by every user,
+(project `goldenlane-<stage>`; a stack that is still running under the old name `streetfood-<stage>` is
+refused with the one command that stops it). It stops early when a secret file is missing, readable by every user,
 or not readable by uid 1000 (checked on Linux; Docker Desktop does not enforce host permissions).
 
 #### Changing a value later
@@ -883,7 +903,7 @@ With more than one instance, start Redis and set `REDIS_URL` (see [Redis](#redis
 | Pooled connections | Use the pooled (`-pooler`) string for `PG_URL`: the service holds no `LISTEN` connection any more. If you see prepared-statement errors (`prepared statement … does not exist`) through the pooler, use the direct string and lower `PG_POOL_MAX` |
 | Background workers | They run inside the API process and do not poll: they run after a commit that wrote rows, when a retry or deadline falls due, and on a `WORKER_SWEEP_INTERVAL` sweep (one hour). An idle API sends no statements, so Neon can suspend after 5 minutes. Every instance runs them. With one instance nothing else is needed. With several, set `REDIS_URL` so a change made through one reaches the others at once; without it they catch up at the next sweep or safety re-read |
 | Reads | Outlets, menus, ratings and a signed-in customer's account are answered from memory (the snapshot reloads within 5 seconds of a write to them, and at least every 10 minutes; an account is remembered for 5 minutes). A customer with the map open sends the database no statements |
-| Which service is awake | Tag the connections (`application_name`, set to `streetfood-customer-api` by default) and read Neon's Monitoring page: see `docs/NEON_COST_STRATEGY.md` |
+| Which service is awake | Tag the connections (`application_name`, set to `goldenlane-api` by default) and read Neon's Monitoring page: see `docs/NEON_COST_STRATEGY.md` |
 | Credentials | Rotate the role's password in Neon, update `PG_URL` in the stage's secret files, then `sh scripts/compose.sh <stage> up -d app`. Nothing else stores it |
 | Backups | Rely on Neon's history plus periodic `pg_dump` from the direct string for production |
 
@@ -926,7 +946,7 @@ REDIS_URL=redis://:PASSWORD@HOST:6379/0       # TLS: rediss://…
 ```
 
 It is a secret when it carries a password: in a deployed stage put it in `secrets/<stage>/app.env`, not in
-`.env.<stage>`. The channel is named after the service and the stage (`streetfood-customer-api:<APP_ENV>:signals`),
+`.env.<stage>`. The channel is named after the service and the stage (`goldenlane-api:<APP_ENV>:signals`),
 so staging and production never hear each other even on one Redis, but **use a separate Redis (or database
 number) per stage** anyway.
 
@@ -974,7 +994,7 @@ health ping every 30 seconds. Check the plan's command allowance before you rely
 1. Set `REDIS_URL` and restart every instance.
 2. Each instance logs `signals - subscribed` once. If it logs `redis is not reachable`, the address,
    password or network is wrong; the service keeps working without it.
-3. Count the listeners: `redis-cli -a "$PASSWORD" PUBSUB NUMSUB streetfood-customer-api:staging:signals`
+3. Count the listeners: `redis-cli -a "$PASSWORD" PUBSUB NUMSUB goldenlane-api:staging:signals`
    should say as many subscribers as instances.
 4. Try it: sign in on instance B (`GET /v1/me`), change the name through instance A
    (`PATCH /v1/me`), then `GET /v1/me` on B returns the new name at once. Without Redis B would keep the

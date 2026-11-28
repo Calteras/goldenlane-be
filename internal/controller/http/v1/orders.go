@@ -307,7 +307,9 @@ func (r *ordersRoutes) checkoutError(err error) error {
 		status := fiber.StatusUnprocessableEntity
 
 		switch rejected.Code {
-		case "PRICE_CHANGED", "OUTLET_CLOSED", "IDEMPOTENCY_CONFLICT", "OUTLET_UNAVAILABLE":
+		case "PRICE_CHANGED", "OUTLET_CLOSED", "IDEMPOTENCY_CONFLICT", "OUTLET_UNAVAILABLE", "PREPAY_REQUIRED":
+			// PREPAY_REQUIRED: this vendor wants to be paid in the app. CUSTOMER_NOT_ACCEPTED (a
+			// 422) is the vendor's own choice and says nothing more about why.
 			status = fiber.StatusConflict
 		}
 

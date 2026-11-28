@@ -260,3 +260,93 @@ func (s *Store) OpenOrderCount(ctx context.Context, customerID string) (int, err
 
 	return n, err
 }
+
+// VendorStats counts how each merchant's orders ended since a time, from the trust events.
+func (s *Store) VendorStats(ctx context.Context, since time.Time) ([]entity.VendorStat, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT e.merchant_id, m.name,
+		  count(*) FILTER (WHERE e.event_type = 'ORDER_COMPLETED'),
+		  count(*) FILTER (WHERE e.event_type = 'NO_SHOW'),
+		  count(*) FILTER (WHERE e.event_type = 'VENDOR_CANCELLED'),
+		  count(*) FILTER (WHERE e.event_type = 'VENDOR_REJECTED'),
+		  count(*) FILTER (WHERE e.event_type = 'VENDOR_NO_RESPONSE'),
+		  count(*) FILTER (WHERE e.event_type = 'VENDOR_THUMBS_DOWN'),
+		  count(*) FILTER (WHERE e.event_type = 'VENDOR_THUMBS_UP')
+		FROM customer_trust_events e JOIN merchants m ON m.id = e.merchant_id
+		WHERE e.merchant_id IS NOT NULL AND e.created_at >= $1
+		GROUP BY e.merchant_id, m.name ORDER BY m.name`, since)
+	if err != nil {
+		return nil, fmt.Errorf("vendor stats: %w", err)
+	}
+	defer rows.Close()
+
+	var out []entity.VendorStat
+
+	for rows.Next() {
+		var v entity.VendorStat
+		if err := rows.Scan(&v.MerchantID, &v.Name, &v.Completed, &v.NoShows, &v.VendorCancelled,
+			&v.VendorRejected, &v.VendorNoResponse, &v.ThumbsDown, &v.ThumbsUp); err != nil {
+			return nil, err
+		}
+
+		out = append(out, v)
+	}
+
+	return out, rows.Err()
+}
+
+// RecordVendorRating stores a vendor's thumbs up or down for a customer. It ignores, without
+// an error, what cannot count: an order that is not that merchant's, one that is not over, one
+// rated already or too long ago, a thumbs up for an order that was not completed, and a thumbs
+// down for an order the vendor's own action already counted against the customer (a no-show is
+// one tap, not two).
+func (s *Store) RecordVendorRating(ctx context.Context, merchantID, platformOrderID string, up bool, now time.Time) error {
+	return s.inTx(ctx, func(tx txn) error {
+		var (
+			orderID, customerID, outletID, status string
+			closed                                time.Time
+		)
+
+		if err := tx.QueryRow(ctx, `
+			SELECT id, customer_id, outlet_id, status, updated_at FROM merchant_orders
+			WHERE platform_order_id = $1 AND merchant_id = $2 FOR UPDATE`, platformOrderID, merchantID,
+		).Scan(&orderID, &customerID, &outletID, &status, &closed); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return nil
+			}
+
+			return err
+		}
+
+		if entity.IsOpen(status) || now.Sub(closed) > entity.RatingWindow {
+			return nil
+		}
+
+		if up && status != entity.OrderCompleted {
+			return nil
+		}
+
+		var counted bool
+		if err := tx.QueryRow(ctx, `
+			SELECT EXISTS (SELECT 1 FROM customer_trust_events WHERE order_id = $1 AND event_type IN
+			  ('VENDOR_THUMBS_UP', 'VENDOR_THUMBS_DOWN', 'NO_SHOW', 'PAYMENT_REFUSED', 'ABUSIVE_REPORTED', 'UNREACHABLE'))`,
+			orderID).Scan(&counted); err != nil {
+			return err
+		}
+
+		if counted {
+			return nil
+		}
+
+		kind, evidence := entity.EventVendorThumbsDown, `{"corroborated": false}`
+		if up {
+			kind, evidence = entity.EventVendorThumbsUp, `{}`
+		}
+
+		return insertTrustEvent(ctx, tx, entity.TrustEvent{
+			CustomerID: customerID, Type: kind, Source: entity.SourceVendor,
+			OrderID: &orderID, OutletID: &outletID, MerchantID: &merchantID,
+			Evidence: json.RawMessage(evidence), CreatedAt: now,
+		})
+	})
+}

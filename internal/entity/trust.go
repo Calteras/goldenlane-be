@@ -44,6 +44,9 @@ const (
 	EventUnreachable       = "UNREACHABLE"
 	EventAbusiveReported   = "ABUSIVE_REPORTED"
 	EventOpenCapHit        = "OPEN_CAP_HIT"
+	// A vendor's one-tap rating of a customer after the order is over.
+	EventVendorThumbsUp   = "VENDOR_THUMBS_UP"
+	EventVendorThumbsDown = "VENDOR_THUMBS_DOWN"
 	// Facts about the vendor's side. They never count against the customer; they exist so a
 	// vendor who cancels or rejects a lot can be spotted.
 	EventVendorCancelled  = "VENDOR_CANCELLED"
@@ -98,4 +101,55 @@ type TrustProfile struct {
 	CompletedOrders int           `json:"completedOrders"`
 	Reasons         []TrustReason `json:"reasons"`
 	ComputedAt      time.Time     `json:"computedAt"`
+}
+
+// What a vendor is told about a customer. A label, never a score.
+const (
+	LabelNew            = "NEW"
+	LabelReliable       = "RELIABLE"
+	LabelCaution        = "CAUTION"
+	LabelPrepayRequired = "PREPAY_REQUIRED"
+)
+
+// RatingWindow is how long after an order ends a vendor can still rate the customer.
+const RatingWindow = 7 * 24 * time.Hour
+
+// VendorTrust is what travels to the POS with an order: a label and facts that are safe to show
+// the vendor. No score, and nothing about other vendors.
+type VendorTrust struct {
+	Label             string `json:"label"`
+	CompletedOrders   int    `json:"completedOrders"`
+	NoShowsLast90Days int    `json:"noShowsLast90Days"`
+}
+
+// LabelFor is the label of a tier.
+func LabelFor(tier string) string {
+	switch tier {
+	case TierGood:
+		return LabelReliable
+	case TierWatch:
+		return LabelCaution
+	case TierRestricted, TierSuspended:
+		return LabelPrepayRequired
+	default:
+		return LabelNew
+	}
+}
+
+// VendorStat is how one merchant's orders ended over a period, from the trust events.
+type VendorStat struct {
+	MerchantID       string   `json:"merchantId"`
+	Name             string   `json:"name"`
+	Completed        int      `json:"completed"`
+	NoShows          int      `json:"noShows"`
+	VendorCancelled  int      `json:"vendorCancelled"`
+	VendorRejected   int      `json:"vendorRejected"`
+	VendorNoResponse int      `json:"vendorNoResponse"`
+	ThumbsDown       int      `json:"thumbsDown"`
+	ThumbsUp         int      `json:"thumbsUp"`
+	NoShowRate       float64  `json:"noShowRate"`
+	CancelRate       float64  `json:"cancelRate"`
+	RejectRate       float64  `json:"rejectRate"`
+	DecidedOrders    int      `json:"decidedOrders"`
+	Flags            []string `json:"flags"`
 }

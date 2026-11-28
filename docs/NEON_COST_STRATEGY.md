@@ -1,6 +1,6 @@
 # Strategy: bring the Neon bill close to zero
 
-Written November 2026 for both backends: this customer API (`streetfood-customer-api`, Go) and the POS
+Written November 2026 for both backends: this customer API (`goldenlane-be`, Go) and the POS
 backend (`../ansilum-be`, NestJS and Prisma). It answers which one costs more on Neon, why, and what to
 change, with SQLite and Redis where they help and where they would do harm.
 
@@ -337,7 +337,7 @@ reconnect loop (`hub.Run`). With several instances, publish to Redis and have ea
 **D. Order stream.** Keep the heartbeat `: ping` every 15 seconds, but re-read the order only when the hub
 signals a change, and once more every 2 minutes as a safety net while a customer is watching.
 
-**E. Connection settings.** Add `application_name=streetfood-customer-api` to `PG_URL`. Set the pool's
+**E. Connection settings.** Add `application_name=goldenlane-api` to `PG_URL`. Set the pool's
 `MaxConnIdleTime` to a few minutes and keep `MinConns` at 0 so nothing holds or revives a connection while
 idle. Keep `PG_URL` on the pooled endpoint **only after `LISTEN` is gone** (section 12).
 
@@ -422,7 +422,7 @@ How to read this:
 **Step 1: tag each service.** Add `application_name` to each connection string:
 
 ```
-postgres://…/streetfood?sslmode=require&application_name=streetfood-customer-api
+postgres://…/streetfood?sslmode=require&application_name=goldenlane-api
 postgresql://…/ansilum?sslmode=require&application_name=ansilum-be
 ```
 

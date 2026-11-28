@@ -219,6 +219,15 @@ type SubmitRequest struct {
 	Payment            map[string]any `json:"payment"`
 	// PickupCode is what the customer shows to find the order. The platform chooses it.
 	PickupCode string `json:"pickupCode,omitempty"`
+	// CustomerTrust is a label and a few facts for the vendor. Never a score. Absent when off.
+	CustomerTrust *CustomerTrust `json:"customerTrust,omitempty"`
+}
+
+// CustomerTrust is what a vendor is told about the customer who ordered.
+type CustomerTrust struct {
+	Label             string `json:"label"`
+	CompletedOrders   int    `json:"completedOrders"`
+	NoShowsLast90Days int    `json:"noShowsLast90Days"`
 }
 
 // Fulfillment is how the customer gets the order.

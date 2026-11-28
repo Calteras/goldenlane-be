@@ -25,6 +25,7 @@ type Merchants interface {
 type Trust interface {
 	Report(ctx context.Context, customerID string) (trust.Report, error)
 	Distribution(ctx context.Context) (trust.Distribution, error)
+	Vendors(ctx context.Context) (trust.VendorReport, error)
 }
 
 type adminRoutes struct {
@@ -39,6 +40,7 @@ func NewAdminRoutes(g fiber.Router, uc Merchants, pay Gateways, tr Trust, l logg
 	newGatewayRoutes(g, pay, l)
 	g.Get("/customers/:id/trust", r.customerTrust)
 	g.Get("/trust/distribution", r.trustDistribution)
+	g.Get("/trust/vendors", r.trustVendors)
 	g.Post("/merchants", r.register)
 	g.Get("/merchants", r.list)
 	g.Delete("/merchants/:id", r.suspend)
@@ -143,4 +145,16 @@ func (r *adminRoutes) trustDistribution(c *fiber.Ctx) error {
 	}
 
 	return ok(c, d)
+}
+
+// trustVendors compares the merchants with each other: how often each calls a customer a no-show,
+// cancels, or rejects, next to the median of the others, and which ones stand out. A vendor that
+// stands out has its reports about customers counted for less.
+func (r *adminRoutes) trustVendors(c *fiber.Ctx) error {
+	report, err := r.tr.Vendors(c.UserContext())
+	if err != nil {
+		return fail(r.l, err)
+	}
+
+	return ok(c, report)
 }

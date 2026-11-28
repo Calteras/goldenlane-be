@@ -1,4 +1,4 @@
-// Command app is the StreetFood customer API.
+// Command app is the Goldenlane customer API.
 package main
 
 import (

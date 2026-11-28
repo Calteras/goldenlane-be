@@ -44,6 +44,21 @@ type Config struct {
 	// often (at least this many in 30 days, and at least this share of their orders).
 	EarlyCancelMin   int     `json:"earlyCancelMin"`
 	EarlyCancelRatio float64 `json:"earlyCancelRatio"`
+
+	// A vendor whose own numbers stand out from its peers (see Assess) has its reports counted
+	// at OutlierFactor. VendorMinOrders and VendorMinEvents say how much history makes a vendor
+	// comparable at all, OutlierMultiple how many times the peer median it takes to stand out,
+	// and the floors keep a handful of unlucky days from flagging anyone.
+	VendorMinOrders int     `json:"vendorMinOrders"`
+	VendorMinEvents int     `json:"vendorMinEvents"`
+	OutlierMultiple float64 `json:"outlierMultiple"`
+	NoShowFloor     float64 `json:"noShowFloor"`
+	CancelFloor     float64 `json:"cancelFloor"`
+	OutlierFactor   float64 `json:"outlierFactor"`
+
+	// VendorFactors is filled in by the service from the vendors' own numbers: merchant id to
+	// how much its reports count (1 is fully). Not a setting.
+	VendorFactors map[string]float64 `json:"-"`
 }
 
 // NoShowPrepaid is the weight key of a no-show on an order that was paid in the app.
@@ -65,10 +80,16 @@ func DefaultConfig() Config {
 			entity.EventAbusiveReported:   {Points: 15, HalfLifeDays: 90},
 			entity.EventOpenCapHit:        {Points: 1, HalfLifeDays: 7},
 			entity.EventOrderCompleted:    {Points: -6, HalfLifeDays: 90},
+			// A vendor's one-tap rating. A thumbs down no system fact backs up is halved by
+			// UncorroboratedFactor, and one merchant can add only VendorCap.
+			entity.EventVendorThumbsUp:   {Points: -2, HalfLifeDays: 60},
+			entity.EventVendorThumbsDown: {Points: 6, HalfLifeDays: 30},
 		},
 		PriorOrders: 3, NewBelow: 3, WatchAt: 20, RestrictedAt: 50,
 		VendorCap: 60, UncorroboratedFactor: 0.5, WindowDays: 365,
 		EarlyCancelMin: 3, EarlyCancelRatio: 0.5,
+		VendorMinOrders: 20, VendorMinEvents: 5, OutlierMultiple: 3,
+		NoShowFloor: 0.25, CancelFloor: 0.30, OutlierFactor: 0.5,
 	}
 }
 
@@ -176,6 +197,11 @@ func Score(events []entity.TrustEvent, cfg Config, now time.Time) Result {
 		merchant := ""
 		if ev.MerchantID != nil {
 			merchant = *ev.MerchantID
+		}
+
+		// A vendor that stands out from its peers is believed less.
+		if f, ok := cfg.VendorFactors[merchant]; ok && ev.Source == entity.SourceVendor && points > 0 {
+			points *= f
 		}
 
 		lines[ev.Type] = append(lines[ev.Type], line{points: points, merchant: merchant, vendor: ev.Source == entity.SourceVendor && points > 0})

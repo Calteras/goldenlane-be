@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: StreetFood customer API
+  title: Goldenlane customer API
   version: 0.1.0
   description: |
     Discovery of street food vendors and kiosks, the customer's account, ordering, and online
@@ -444,6 +444,20 @@ paths:
         '200': { description: 'The report: `profile`, `policy`, `timeline`, `config`' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
+  /v1/admin/trust/vendors:
+    get:
+      tags: [Operator]
+      summary: How merchants compare, and which ones stand out
+      description: |
+        For each merchant over the last 90 days: how often it calls a customer a no-show, cancels
+        and rejects, next to the median of its peers. A merchant that calls far more no-shows than
+        the others (at least three times the median, above a floor, and with enough of them) has
+        its reports about customers counted for less. Nobody is flagged with fewer than three
+        comparable merchants.
+      security: [{ operator: [] }]
+      responses:
+        '200': { description: 'The peer medians and each merchant, with its `flags`' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /v1/admin/trust/distribution:
     get:
       tags: [Operator]

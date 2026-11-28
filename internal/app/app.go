@@ -133,7 +133,7 @@ func Run(cfg *config.Config) {
 	}, l)
 
 	orders := ordering.New(store, posClient, pay, box, l)
-	scorer := trust.New(store, l)
+	scorer := trust.New(store, l, trust.WithVendorLabels(cfg.Trust.VendorLabels))
 	orders.SetTrust(scorer)
 	pay.SetOrderNotifier(orders.Notification)
 	integ.SetOrderMirror(orders)

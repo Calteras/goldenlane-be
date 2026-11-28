@@ -27,11 +27,12 @@ type (
 		Redis       Redis
 		Payments    Payments
 		Metrics     Metrics
+		Trust       Trust
 	}
 
 	// App identifies the deployment.
 	App struct {
-		Name    string `env:"APP_NAME" envDefault:"streetfood-customer-api"`
+		Name    string `env:"APP_NAME" envDefault:"goldenlane-api"`
 		Version string `env:"APP_VERSION" envDefault:"dev"`
 		Env     string `env:"APP_ENV" envDefault:"development"`
 	}
@@ -121,6 +122,14 @@ type (
 	// Metrics exposes Prometheus metrics at /metrics.
 	Metrics struct {
 		Enabled bool `env:"METRICS_ENABLED" envDefault:"true"`
+	}
+
+	// Trust tunes what vendors are told about customers. Scores and tiers are always computed;
+	// this only decides whether a vendor sees a label with each order.
+	Trust struct {
+		// VendorLabels sends each order to the POS with the customer's trust label (new,
+		// reliable, caution, prepay required) and a few facts. Turn it off to hide them.
+		VendorLabels bool `env:"TRUST_VENDOR_LABELS" envDefault:"true"`
 	}
 )
 

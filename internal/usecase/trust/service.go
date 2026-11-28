@@ -14,6 +14,8 @@ import (
 )
 
 const (
+	_vendorWindow  = 90 * 24 * time.Hour
+	_factorsTTL    = 10 * time.Minute
 	_configTTL     = time.Minute
 	_sweepBatch    = 200
 	_distributionN = 5000
@@ -29,6 +31,7 @@ type Store interface {
 	CustomersToScore(ctx context.Context, limit int) ([]string, error)
 	CustomersWithEvents(ctx context.Context, limit int) ([]string, error)
 	OpenOrderCount(ctx context.Context, customerID string) (int, error)
+	VendorStats(ctx context.Context, since time.Time) ([]entity.VendorStat, error)
 }
 
 // Service scores customers. It never refuses anything: in shadow mode it only records what it
@@ -38,14 +41,30 @@ type Service struct {
 	log   logger.Interface
 	now   func() time.Time
 
+	labels bool
+
 	mu       sync.Mutex
 	cfg      Config
 	cfgUntil time.Time
+
+	factors      map[string]float64
+	factorsUntil time.Time
 }
 
+// Option changes how the service behaves.
+type Option func(*Service)
+
+// WithVendorLabels turns on (the default) or off the label vendors are shown with each order.
+func WithVendorLabels(on bool) Option { return func(s *Service) { s.labels = on } }
+
 // New builds the service.
-func New(store Store, log logger.Interface) *Service {
-	return &Service{store: store, log: log, now: time.Now}
+func New(store Store, log logger.Interface, opts ...Option) *Service {
+	s := &Service{store: store, log: log, now: time.Now, labels: true}
+	for _, o := range opts {
+		o(s)
+	}
+
+	return s
 }
 
 // Config returns the rules in force: the defaults, with whatever the trust_config table overrides.
@@ -120,6 +139,7 @@ func (s *Service) Evaluate(ctx context.Context, customerID string) (entity.Trust
 
 func (s *Service) compute(ctx context.Context, customerID string) (entity.TrustProfile, error) {
 	cfg := s.Config(ctx)
+	cfg.VendorFactors = s.vendorFactors(ctx, cfg)
 	now := s.now()
 
 	events, err := s.store.TrustEvents(ctx, customerID, now.AddDate(0, 0, -cfg.WindowDays))
@@ -269,4 +289,82 @@ func percentile(sorted []float64, p float64) float64 {
 	}
 
 	return sorted[int(math.Min(float64(len(sorted)-1), math.Floor(p*float64(len(sorted)))))]
+}
+
+// vendorFactors says how much each merchant's reports about customers count. Vendors that stand
+// out from their peers are believed less. It is worked out at most every ten minutes, and a
+// failure leaves everybody at full weight rather than failing a score.
+func (s *Service) vendorFactors(ctx context.Context, cfg Config) map[string]float64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.now().Before(s.factorsUntil) {
+		return s.factors
+	}
+
+	stats, err := s.store.VendorStats(ctx, s.now().Add(-_vendorWindow))
+	if err != nil {
+		s.log.Warn("vendor numbers unreadable, trusting every vendor equally", "error", err.Error())
+
+		return nil
+	}
+
+	Assess(stats, cfg)
+	s.factors, s.factorsUntil = Factors(stats, cfg), s.now().Add(_factorsTTL)
+
+	return s.factors
+}
+
+// VendorReport is how vendors compare, for the operator.
+type VendorReport struct {
+	Peers   Peers               `json:"peers"`
+	Vendors []entity.VendorStat `json:"vendors"`
+}
+
+// Vendors shows each merchant's numbers next to its peers' and which ones stand out.
+func (s *Service) Vendors(ctx context.Context) (VendorReport, error) {
+	cfg := s.Config(ctx)
+
+	stats, err := s.store.VendorStats(ctx, s.now().Add(-_vendorWindow))
+	if err != nil {
+		return VendorReport{}, err
+	}
+
+	if stats == nil {
+		stats = []entity.VendorStat{}
+	}
+
+	return VendorReport{Peers: Assess(stats, cfg), Vendors: stats}, nil
+}
+
+// VendorView is what a vendor is shown about a customer with their order: a label and a few
+// facts. It is nil when labels are off or the customer cannot be read, so an order is never
+// held up by it.
+func (s *Service) VendorView(ctx context.Context, customerID string) *entity.VendorTrust {
+	if !s.labels {
+		return nil
+	}
+
+	cfg := s.Config(ctx)
+	cfg.VendorFactors = s.vendorFactors(ctx, cfg)
+	now := s.now()
+
+	events, err := s.store.TrustEvents(ctx, customerID, now.AddDate(0, 0, -cfg.WindowDays))
+	if err != nil {
+		s.log.Warn("trust label unreadable", "customer", customerID, "error", err.Error())
+
+		return nil
+	}
+
+	r := Score(events, cfg, now)
+	recent := now.AddDate(0, 0, -90)
+	noShows := 0
+
+	for _, ev := range events {
+		if ev.Type == entity.EventNoShow && !ev.CreatedAt.Before(recent) {
+			noShows++
+		}
+	}
+
+	return &entity.VendorTrust{Label: entity.LabelFor(r.Tier), CompletedOrders: r.Completed, NoShowsLast90Days: noShows}
 }

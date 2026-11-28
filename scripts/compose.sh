@@ -62,5 +62,14 @@ done
 # An explicit stage wins over anything inherited from the shell.
 export APP_ENV="$stage"
 
-exec docker compose --project-name "streetfood-$stage" --env-file "$config" \
+# Renamed from streetfood-<stage>. A stack still running under the old name holds the same
+# port and the same Redis volume: stop it once, then everything runs under the new name.
+if [ -n "$(docker compose --project-name "streetfood-$stage" ps --quiet 2>/dev/null)" ]; then
+  echo "A stack from before the rename is still running as project streetfood-$stage." >&2
+  echo "Stop it once, then run this again:" >&2
+  echo "  docker compose --project-name streetfood-$stage down" >&2
+  exit 1
+fi
+
+exec docker compose --project-name "goldenlane-$stage" --env-file "$config" \
   -f docker-compose.deploy.yml "$@"

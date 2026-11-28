@@ -50,6 +50,7 @@ type Store interface {
 	LinkByMerchant(ctx context.Context, merchantID string) (entity.Link, error)
 	CreateCheckout(ctx context.Context, in persistent.CheckoutInput) (*entity.Order, bool, error)
 	RecordCapHit(ctx context.Context, customerID, outletID, merchantID string) error
+	RecordVendorRating(ctx context.Context, merchantID, platformOrderID string, up bool, now time.Time) error
 	ExistingCheckout(ctx context.Context, customerID, key, requestHash string) (*entity.Order, error)
 	OrderByID(ctx context.Context, id string) (*entity.Order, error)
 	CustomerOrder(ctx context.Context, customerID, id string) (*entity.Order, error)
@@ -99,6 +100,8 @@ type UseCase struct {
 // done. It never changes the answer: shadow mode, until enforcement is switched on.
 type TrustObserver interface {
 	Shadow(ctx context.Context, customer entity.Customer, outletID string)
+	// VendorView is the label and facts the vendor is shown with an order, or nil for none.
+	VendorView(ctx context.Context, customerID string) *entity.VendorTrust
 }
 
 // SetTrust installs the observer. Without one, checkouts are not observed.
@@ -543,6 +546,14 @@ func (u *UseCase) submit(ctx context.Context, orderID string) {
 		name = "Customer"
 	}
 
+	var trustView *pos.CustomerTrust
+
+	if u.trust != nil {
+		if v := u.trust.VendorView(ctx, order.CustomerID); v != nil {
+			trustView = &pos.CustomerTrust{Label: v.Label, CompletedOrders: v.CompletedOrders, NoShowsLast90Days: v.NoShowsLast90Days}
+		}
+	}
+
 	result, err := u.pos.SubmitOrder(ctx, cred, pos.SubmitRequest{
 		PlatformOrderID: order.PlatformOrderID,
 		CheckoutID:      "co_" + strings.ReplaceAll(order.CheckoutID, "-", ""),
@@ -550,7 +561,7 @@ func (u *UseCase) submit(ctx context.Context, orderID string) {
 		Fulfillment:     pos.Fulfillment{Type: order.FulfillmentType, Label: order.FulfillmentLbl},
 		Customer:        pos.OrderCustomer{PlatformCustomerID: "cu_" + strings.ReplaceAll(order.CustomerID, "-", ""), Name: name, Phone: data.Phone},
 		Notes:           order.Notes, Items: items, ExpectedTotalMinor: expected,
-		Payment: payment, PickupCode: deref(order.PickupCode),
+		Payment: payment, PickupCode: deref(order.PickupCode), CustomerTrust: trustView,
 	})
 	if err != nil {
 		var perr *pos.Error
@@ -770,6 +781,20 @@ func (u *UseCase) ApplyEvent(ctx context.Context, version int, data json.RawMess
 	}
 
 	return err
+}
+
+// ApplyRating records a vendor's thumbs up or down for the customer of an order. A rating that
+// cannot count (not that merchant's order, not over, rated already, too late) is dropped.
+func (u *UseCase) ApplyRating(ctx context.Context, merchantID string, data json.RawMessage) error {
+	var d struct {
+		PlatformOrderID string `json:"platformOrderId"`
+		Rating          string `json:"rating"`
+	}
+	if err := json.Unmarshal(data, &d); err != nil || d.PlatformOrderID == "" || (d.Rating != "UP" && d.Rating != "DOWN") {
+		return nil //nolint:nilerr // malformed: nothing to record
+	}
+
+	return u.store.RecordVendorRating(ctx, merchantID, d.PlatformOrderID, d.Rating == "UP", u.now())
 }
 
 func knownStatus(s string) bool {

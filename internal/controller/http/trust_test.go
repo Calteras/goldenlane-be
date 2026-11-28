@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/Calteras/streetfood-customer-api/internal/repository/webapi/pos"
 )
 
 func TestTheCustomersOrderShowsThePickupCodeOnlyWhileItIsOpen(t *testing.T) {
@@ -72,4 +74,38 @@ func TestAdminTrustEndpoints(t *testing.T) {
 		require.Equal(t, 200, status)
 		require.Contains(t, data(body), "tiers")
 	})
+}
+
+func TestAVendorsRefusalReachesTheCustomerInNeutralWords(t *testing.T) {
+	for code, want := range map[string]int{
+		"PREPAY_REQUIRED":       409,
+		"CUSTOMER_NOT_ACCEPTED": 422,
+	} {
+		t.Run(code, func(t *testing.T) {
+			a := ordersAPI(t)
+			a.pos.SubmitErr = &pos.Error{Status: 409, Code: code}
+
+			status, out := a.checkout("tok-rina", "k-"+code, a.checkoutBody(nil))
+
+			require.Equal(t, want, status)
+			require.Equal(t, code, out["code"], "the app tells these apart from a closed outlet")
+		})
+	}
+}
+
+func TestAdminVendorComparison(t *testing.T) {
+	a := ordersAPI(t)
+
+	for _, h := range []map[string]string{nil, bearer("tok-rina")} {
+		status, _, _ := a.do("GET", "/v1/admin/trust/vendors", nil, h)
+		require.Equal(t, 401, status)
+	}
+
+	status, body, _ := a.do("GET", "/v1/admin/trust/vendors", nil, bearer(adminToken))
+	require.Equal(t, 200, status)
+
+	report := data(body)
+	require.Contains(t, report, "peers")
+	require.Contains(t, report, "vendors")
+	require.False(t, report["peers"].(map[string]any)["comparable"].(bool), "one vendor, nobody to compare it with")
 }
