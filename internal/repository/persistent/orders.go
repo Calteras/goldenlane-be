@@ -18,7 +18,9 @@ const orderColumns = `
 	o.pos_order_id, o.status, o.pos_version, o.fulfillment_type, o.fulfillment_label, o.notes,
 	o.payment_mode, o.subtotal_minor, o.tax_minor, o.service_minor, o.total_minor,
 	o.expected_total_minor, o.accept_by, o.prep_time_minutes, o.reason, o.error_code, o.error_detail,
-	o.submit_attempts, o.created_at, o.updated_at, o.completed_at, o.payment_deadline`
+	o.submit_attempts, o.created_at, o.updated_at, o.completed_at, o.payment_deadline,
+	o.ready_at, o.no_show_at, o.cancelled_by, o.close_reason_code,
+	o.pickup_code, o.pickup_confirmed_at, o.pickup_confirmed_via`
 
 const orderFrom = ` FROM merchant_orders o JOIN outlets ou ON ou.id = o.outlet_id `
 
@@ -30,7 +32,9 @@ func scanOrder(row pgx.Row) (*entity.Order, error) {
 		&o.POSOrderID, &o.Status, &o.POSVersion, &o.FulfillmentType, &o.FulfillmentLbl, &o.Notes,
 		&o.PaymentMode, &o.SubtotalMinor, &o.TaxMinor, &o.ServiceMinor, &o.TotalMinor,
 		&o.ExpectedTotal, &o.AcceptBy, &o.PrepMinutes, &o.Reason, &o.ErrorCode, &o.ErrorDetail,
-		&o.SubmitAttempts, &o.CreatedAt, &o.UpdatedAt, &o.CompletedAt, &o.PaymentDeadline)
+		&o.SubmitAttempts, &o.CreatedAt, &o.UpdatedAt, &o.CompletedAt, &o.PaymentDeadline,
+		&o.ReadyAt, &o.NoShowAt, &o.CancelledBy, &o.CloseReasonCode,
+		&o.PickupCode, &o.PickupConfirmedAt, &o.PickupVia)
 	if err != nil {
 		return nil, err
 	}
@@ -166,6 +170,16 @@ func (s *Store) CreateCheckout(ctx context.Context, in CheckoutInput) (*entity.O
 			return err
 		}
 
+		// One checkout at a time per outlet picks a pickup code, so two orders never share one.
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext($1))`, "pickup:"+in.OutletID); err != nil {
+			return err
+		}
+
+		pickupCode, err := newPickupCode(ctx, tx, in.OutletID)
+		if err != nil {
+			return err
+		}
+
 		status, mode := entity.OrderCreated, entity.PaymentModePayAtPick
 
 		var (
@@ -182,11 +196,12 @@ func (s *Store) CreateCheckout(ctx context.Context, in CheckoutInput) (*entity.O
 		if err := tx.QueryRow(ctx, `
 			INSERT INTO merchant_orders (checkout_id, customer_id, merchant_id, outlet_id, platform_order_id,
 			  fulfillment_type, fulfillment_label, notes, expected_total_minor,
-			  status, payment_mode, payment_deadline, subtotal_minor, tax_minor, service_minor, total_minor, merchant_fee_bps)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING id`,
+			  status, payment_mode, payment_deadline, subtotal_minor, tax_minor, service_minor, total_minor, merchant_fee_bps,
+			  pickup_code)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
 			checkoutID, in.CustomerID, in.MerchantID, in.OutletID, in.PlatformOrderID,
 			in.FulfillmentType, in.FulfillmentLabel, in.Notes, in.ExpectedTotalMinor,
-			status, mode, deadline, subtotal, tax, service, total, in.MerchantFeeBps).Scan(&orderID); err != nil {
+			status, mode, deadline, subtotal, tax, service, total, in.MerchantFeeBps, pickupCode).Scan(&orderID); err != nil {
 			return err
 		}
 
@@ -374,37 +389,81 @@ func (s *Store) FailSubmit(ctx context.Context, id, code string, detail json.Raw
 		d = []byte(detail)
 	}
 
-	tag, err := s.pool.Exec(ctx, `
-		UPDATE merchant_orders SET status = 'SUBMIT_FAILED', error_code = $2, error_detail = $3,
-		  lease_until = NULL, lease_token = NULL, updated_at = now()
-		WHERE id = $1 AND status = 'CREATED'`, id, code, d)
-	if err != nil {
-		return false, err
-	}
+	var done bool
 
-	if tag.RowsAffected() == 1 {
-		_, err = s.pool.Exec(ctx, `SELECT pg_notify('order_updates', $1)`, id)
-	}
+	err := s.inTx(ctx, func(tx txn) error {
+		tag, err := tx.Exec(ctx, `
+			UPDATE merchant_orders SET status = 'SUBMIT_FAILED', error_code = $2, error_detail = $3,
+			  cancelled_by = 'SYSTEM', close_reason_code = $2,
+			  lease_until = NULL, lease_token = NULL, updated_at = now()
+			WHERE id = $1 AND status = 'CREATED'`, id, code, d)
+		if err != nil {
+			return err
+		}
 
-	return tag.RowsAffected() == 1, err
+		if tag.RowsAffected() != 1 {
+			return nil
+		}
+
+		done = true
+
+		// Stale prices are the one refusal that says something about the customer's request.
+		if code == "PRICE_CHANGED" {
+			var customer, outlet, merchant string
+			if err := tx.QueryRow(ctx, `SELECT customer_id, outlet_id, merchant_id FROM merchant_orders WHERE id = $1`, id).
+				Scan(&customer, &outlet, &merchant); err != nil {
+				return err
+			}
+
+			if err := insertTrustEvent(ctx, tx, entity.TrustEvent{
+				CustomerID: customer, Type: entity.EventPriceChanged, Source: entity.SourceSystem,
+				OrderID: &id, OutletID: &outlet, MerchantID: &merchant, CreatedAt: time.Now(),
+			}); err != nil {
+				return err
+			}
+		}
+
+		_, err = tx.Exec(ctx, `SELECT pg_notify('order_updates', $1)`, id)
+
+		return err
+	})
+
+	return done, err
 }
 
 // CancelCreated cancels an order the POS has not been told about yet. It reports whether
 // it did: false means the order had been sent meanwhile.
 func (s *Store) CancelCreated(ctx context.Context, customerID, id string) (bool, error) {
-	tag, err := s.pool.Exec(ctx, `
-		UPDATE merchant_orders SET status = 'CANCELLED', reason = 'Cancelled by customer',
-		  lease_until = NULL, lease_token = NULL, updated_at = now()
-		WHERE id = $1 AND customer_id = $2 AND status = 'CREATED'`, id, customerID)
-	if err != nil {
-		return false, err
-	}
+	var done bool
 
-	if tag.RowsAffected() == 1 {
-		_, err = s.pool.Exec(ctx, `SELECT pg_notify('order_updates', $1)`, id)
-	}
+	err := s.inTx(ctx, func(tx txn) error {
+		tag, err := tx.Exec(ctx, `
+			UPDATE merchant_orders SET status = 'CANCELLED', reason = 'Cancelled by customer',
+			  cancelled_by = 'CUSTOMER', close_reason_code = 'CUSTOMER_CANCELLED',
+			  lease_until = NULL, lease_token = NULL, updated_at = now()
+			WHERE id = $1 AND customer_id = $2 AND status = 'CREATED'`, id, customerID)
+		if err != nil {
+			return err
+		}
 
-	return tag.RowsAffected() == 1, err
+		if tag.RowsAffected() != 1 {
+			return nil
+		}
+
+		done = true
+
+		if err := recordOutcome(ctx, tx, id, entity.Outcome{
+			Status: entity.OrderCancelled, ReasonCode: entity.ReasonCustomerCancel, CancelledBy: entity.CancelledByCustomer, Now: time.Now(),
+		}); err != nil {
+			return err
+		}
+
+		_, err = tx.Exec(ctx, `SELECT pg_notify('order_updates', $1)`, id)
+
+		return err
+	})
+
+	return done, err
 }
 
 // Notify builds the push message for an order that just changed, or nil for none.
@@ -479,6 +538,13 @@ func applyLocked(ctx context.Context, tx txn, id string, version int, st entity.
 		return false, nil
 	}
 
+	closed := st.Status == entity.OrderRejected || st.Status == entity.OrderCancelled || st.Status == entity.OrderExpired
+	reasonCode, cancelledBy := entity.NormalizeClose(st.Status, st.ReasonCode, st.CancelledBy)
+
+	if !closed {
+		reasonCode, cancelledBy = "", ""
+	}
+
 	if _, err := tx.Exec(ctx, `
 		UPDATE merchant_orders SET
 		  status = $2, pos_version = $3,
@@ -487,11 +553,24 @@ func applyLocked(ctx context.Context, tx txn, id string, version int, st entity.
 		  service_minor = COALESCE($7, service_minor), total_minor = COALESCE($8, total_minor),
 		  accept_by = COALESCE($9, accept_by), prep_time_minutes = COALESCE($10, prep_time_minutes),
 		  reason = $11, completed_at = CASE WHEN $2 = 'COMPLETED' THEN now() ELSE completed_at END,
+		  ready_at = CASE WHEN $2 = 'READY' THEN COALESCE(ready_at, now()) ELSE ready_at END,
+		  no_show_at = CASE WHEN $2 = 'CANCELLED' AND $12 = 'NO_SHOW' THEN COALESCE(no_show_at, now()) ELSE no_show_at END,
+		  close_reason_code = COALESCE(NULLIF($12, ''), close_reason_code),
+		  cancelled_by = COALESCE(NULLIF($13, ''), cancelled_by),
+		  pickup_confirmed_at = CASE WHEN $2 = 'COMPLETED' THEN COALESCE(pickup_confirmed_at, now()) ELSE pickup_confirmed_at END,
+		  pickup_confirmed_via = CASE WHEN $2 = 'COMPLETED' THEN COALESCE(NULLIF($14, ''), pickup_confirmed_via, 'MANUAL') ELSE pickup_confirmed_via END,
 		  error_code = NULL, error_detail = NULL, lease_until = NULL, lease_token = NULL,
 		  checked_at = now(), updated_at = now()
 		WHERE id = $1`,
 		id, st.Status, st.Version, st.POSOrderID, st.Subtotal, st.Tax, st.Service, st.Total,
-		st.AcceptBy, st.PrepMinutes, st.Reason); err != nil {
+		st.AcceptBy, st.PrepMinutes, st.Reason, reasonCode, cancelledBy, st.PickupVia); err != nil {
+		return false, err
+	}
+
+	if err := recordOutcome(ctx, tx, id, entity.Outcome{
+		Status: st.Status, ReasonCode: reasonCode, CancelledBy: cancelledBy, PickupVia: st.PickupVia,
+		VendorWaitedMinutes: st.WaitedMinutes, Now: time.Now(),
+	}); err != nil {
 		return false, err
 	}
 

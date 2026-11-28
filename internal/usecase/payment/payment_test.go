@@ -868,3 +868,63 @@ func mustJSON(v any) []byte {
 
 	return raw
 }
+
+func TestAPaidNoShowIsNotRefundedOnItsOwn(t *testing.T) {
+	w := setup(t)
+	w.connect()
+
+	o := w.pay(w.order())
+	w.send()
+	w.applyPOS(o, entity.OrderAccepted)
+	w.applyPOS(o, entity.OrderPreparing)
+	w.applyPOS(o, entity.OrderReady)
+
+	got := w.reload(o)
+	version := w.POS.Set(got.PlatformOrderID, entity.OrderCancelled)
+
+	require.NoError(t, w.Order.ApplyEvent(w.Ctx, version, mustJSON(map[string]any{
+		"platformOrderId": got.PlatformOrderID, "posOrderId": *got.POSOrderID, "status": entity.OrderCancelled,
+		"reasonCode": "NO_SHOW", "cancelledBy": "VENDOR",
+	})))
+
+	more, err := w.Pay.Refund(w.Ctx)
+	require.NoError(t, err)
+	require.False(t, more)
+
+	after := w.reload(o)
+	require.Equal(t, entity.OrderCancelled, after.Status)
+	require.Equal(t, "NO_SHOW", *after.CloseReasonCode)
+	require.Empty(t, w.GW.Refunded, "the vendor made the food, so the money stays unless a person decides otherwise")
+	require.Nil(t, after.Payment.RefundStatus)
+
+	due, ok, err := w.Store.RefundDue(w.Ctx)
+	require.NoError(t, err)
+	require.False(t, ok, "the refund worker has nothing to wait for either (no busy loop), got %v", due)
+
+	var owed int
+	require.NoError(t, w.Pool.QueryRow(w.Ctx, `SELECT count(*) FROM fee_ledger`).Scan(&owed))
+	require.Zero(t, owed, "a no-show earns the platform nothing yet (open question: fee on no-shows)")
+}
+
+func TestAnUnpaidOrderThatExpiresIsNotedAgainstTheCustomer(t *testing.T) {
+	w := setup(t)
+	w.connect()
+
+	o := w.order()
+
+	_, err := w.Pool.Exec(w.Ctx, `UPDATE merchant_orders SET payment_deadline = now() - interval '1 minute' WHERE id = $1`, o.ID)
+	require.NoError(t, err)
+
+	_, err = w.Pay.ExpireUnpaid(w.Ctx)
+	require.NoError(t, err)
+
+	got := w.reload(o)
+	require.Equal(t, entity.OrderExpired, got.Status)
+	require.Equal(t, "PAYMENT_EXPIRED", *got.CloseReasonCode)
+	require.Equal(t, "SYSTEM", *got.CancelledBy)
+
+	var n int
+	require.NoError(t, w.Pool.QueryRow(w.Ctx,
+		`SELECT count(*) FROM customer_trust_events WHERE order_id = $1 AND event_type = 'PAYMENT_EXPIRED'`, o.ID).Scan(&n))
+	require.Equal(t, 1, n)
+}

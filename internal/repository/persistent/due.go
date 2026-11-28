@@ -68,7 +68,8 @@ func (s *Store) RefundDue(ctx context.Context) (time.Duration, bool, error) {
 		SELECT extract(epoch FROM (min(GREATEST(p.refund_available_at, COALESCE(p.refund_lease_until, p.refund_available_at))) - now()))::float8
 		FROM payments p JOIN merchant_orders o ON o.id = p.order_id
 		WHERE p.status = 'PAID' AND (p.refund_status IS NULL OR p.refund_status = 'PENDING')
-		  AND (o.status IN ('CANCELLED', 'REJECTED', 'EXPIRED', 'SUBMIT_FAILED')
+		  AND ((o.status IN ('CANCELLED', 'REJECTED', 'EXPIRED', 'SUBMIT_FAILED')
+		        AND NOT (o.status = 'CANCELLED' AND o.close_reason_code = 'NO_SHOW'))
 		       OR EXISTS (SELECT 1 FROM payments q WHERE q.order_id = p.order_id AND q.status = 'PAID' AND q.id <> p.id
 		                  AND (q.paid_at, q.id) < (p.paid_at, p.id)))`)
 }

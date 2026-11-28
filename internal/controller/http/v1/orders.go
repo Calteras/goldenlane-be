@@ -119,6 +119,12 @@ type orderView struct {
 	CreatedAt   time.Time  `json:"createdAt"`
 	UpdatedAt   time.Time  `json:"updatedAt"`
 	CompletedAt *time.Time `json:"completedAt"`
+	// PickupCode is what to show at the cart; only while the order is open.
+	PickupCode *string `json:"pickupCode"`
+	// ReadyAt is when the order became ready for pickup.
+	ReadyAt *time.Time `json:"readyAt"`
+	// CloseReasonCode says why a finished order ended (NO_SHOW, CUSTOMER_CANCELLED, ...).
+	CloseReasonCode *string `json:"closeReasonCode"`
 }
 
 type outletRef struct {
@@ -175,6 +181,11 @@ func present(o *entity.Order) orderView {
 	}
 	if v.Items == nil {
 		v.Items = []entity.OrderItem{}
+	}
+
+	v.ReadyAt, v.CloseReasonCode = o.ReadyAt, o.CloseReasonCode
+	if entity.IsOpen(o.Status) {
+		v.PickupCode = o.PickupCode
 	}
 
 	v.CanPay = o.Status == entity.OrderUnpaid && o.PaymentDeadline != nil && o.PaymentDeadline.After(time.Now())

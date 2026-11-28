@@ -217,6 +217,8 @@ type SubmitRequest struct {
 	Items              []SubmitItem   `json:"items"`
 	ExpectedTotalMinor *int64         `json:"expectedTotalMinor,omitempty"`
 	Payment            map[string]any `json:"payment"`
+	// PickupCode is what the customer shows to find the order. The platform chooses it.
+	PickupCode string `json:"pickupCode,omitempty"`
 }
 
 // Fulfillment is how the customer gets the order.
@@ -251,6 +253,10 @@ type OrderResult struct {
 	PrepTimeMinutes *int      `json:"prepTimeMinutes"`
 	Reason          *string   `json:"reason"`
 	Version         int       `json:"version"`
+	// Trust signals (empty from an older POS).
+	ReasonCode         string `json:"reasonCode"`
+	CancelledBy        string `json:"cancelledBy"`
+	PickupConfirmedVia string `json:"pickupConfirmedVia"`
 }
 
 // Pricing is the POS's price for an order, in minor units.

@@ -49,6 +49,7 @@ type Store interface {
 	PublicMenu(ctx context.Context, outletID string) (*entity.Menu, error)
 	LinkByMerchant(ctx context.Context, merchantID string) (entity.Link, error)
 	CreateCheckout(ctx context.Context, in persistent.CheckoutInput) (*entity.Order, bool, error)
+	RecordCapHit(ctx context.Context, customerID, outletID, merchantID string) error
 	ExistingCheckout(ctx context.Context, customerID, key, requestHash string) (*entity.Order, error)
 	OrderByID(ctx context.Context, id string) (*entity.Order, error)
 	CustomerOrder(ctx context.Context, customerID, id string) (*entity.Order, error)
@@ -91,7 +92,17 @@ type UseCase struct {
 	box   *secretbox.Box
 	log   logger.Interface
 	now   func() time.Time
+	trust TrustObserver
 }
+
+// TrustObserver is told about every checkout so it can record what the trust policy would have
+// done. It never changes the answer: shadow mode, until enforcement is switched on.
+type TrustObserver interface {
+	Shadow(ctx context.Context, customer entity.Customer, outletID string)
+}
+
+// SetTrust installs the observer. Without one, checkouts are not observed.
+func (u *UseCase) SetTrust(o TrustObserver) { u.trust = o }
 
 // New builds the use case.
 func New(store Store, posClient POS, payer Payer, box *secretbox.Box, log logger.Interface) *UseCase {
@@ -252,8 +263,25 @@ func (u *UseCase) Checkout(ctx context.Context, customer entity.Customer, key st
 		in.Online, in.Quote, in.PaymentDeadline = true, &quote, u.pay.Deadline(u.now())
 	}
 
+	if u.trust != nil {
+		// Off the request: the customer never waits for, or is changed by, the observer.
+		go func() {
+			shadowCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+			defer cancel()
+
+			u.trust.Shadow(shadowCtx, customer, outlet.ID)
+		}()
+	}
+
 	order, created, err := u.store.CreateCheckout(ctx, in)
 	if err != nil {
+		if errors.Is(err, entity.ErrTooMany) {
+			// A signal, never a verdict: it never fails the request that is being refused.
+			if rerr := u.store.RecordCapHit(ctx, customer.ID, outlet.ID, outlet.MerchantID); rerr != nil {
+				u.log.Warn("trust event not stored", "error", rerr.Error())
+			}
+		}
+
 		return nil, false, err
 	}
 
@@ -452,6 +480,7 @@ func stateOf(r pos.OrderResult) entity.POSOrderState {
 		POSOrderID: r.POSOrderID, Status: r.Status, Version: r.Version,
 		Subtotal: &r.Pricing.SubtotalMinor, Tax: &r.Pricing.TaxMinor, Service: &r.Pricing.ServiceMinor, Total: &r.Pricing.TotalMinor,
 		PrepMinutes: r.PrepTimeMinutes, Reason: r.Reason,
+		ReasonCode: r.ReasonCode, CancelledBy: r.CancelledBy, PickupVia: r.PickupConfirmedVia,
 	}
 	if !r.AcceptBy.IsZero() {
 		st.AcceptBy = &r.AcceptBy
@@ -521,7 +550,7 @@ func (u *UseCase) submit(ctx context.Context, orderID string) {
 		Fulfillment:     pos.Fulfillment{Type: order.FulfillmentType, Label: order.FulfillmentLbl},
 		Customer:        pos.OrderCustomer{PlatformCustomerID: "cu_" + strings.ReplaceAll(order.CustomerID, "-", ""), Name: name, Phone: data.Phone},
 		Notes:           order.Notes, Items: items, ExpectedTotalMinor: expected,
-		Payment: payment,
+		Payment: payment, PickupCode: deref(order.PickupCode),
 	})
 	if err != nil {
 		var perr *pos.Error
@@ -563,7 +592,10 @@ func (u *UseCase) undo(ctx context.Context, o *entity.Order, cred pos.Credential
 		return
 	}
 
-	if _, _, err := u.store.ApplyPOSStatus(ctx, o.PlatformOrderID, stateOf(res), nil); err != nil {
+	st := stateOf(res)
+	st.ReasonCode, st.CancelledBy = entity.ReasonCustomerCancel, entity.CancelledByCustomer
+
+	if _, _, err := u.store.ApplyPOSStatus(ctx, o.PlatformOrderID, st, nil); err != nil {
 		u.log.Error("cancelled order not stored", "order", o.ID, "error", err.Error())
 	}
 }
@@ -687,7 +719,11 @@ func (u *UseCase) Cancel(ctx context.Context, customerID, id string) (*entity.Or
 		return nil, fmt.Errorf("cancel at the merchant: %w", err)
 	}
 
-	updated, _, err := u.store.ApplyPOSStatus(ctx, o.PlatformOrderID, stateOf(res), nil)
+	// The customer asked for this, whatever the POS says about why.
+	st := stateOf(res)
+	st.ReasonCode, st.CancelledBy = entity.ReasonCustomerCancel, entity.CancelledByCustomer
+
+	updated, _, err := u.store.ApplyPOSStatus(ctx, o.PlatformOrderID, st, nil)
 
 	return updated, err
 }
@@ -708,14 +744,27 @@ func (u *UseCase) ApplyEvent(ctx context.Context, version int, data json.RawMess
 		Status          string  `json:"status"`
 		Reason          *string `json:"reason"`
 		PrepTimeMinutes *int    `json:"prepTimeMinutes"`
+		// Trust signals. A POS that does not send them leaves them empty.
+		ReasonCode         string `json:"reasonCode"`
+		CancelledBy        string `json:"cancelledBy"`
+		PickupConfirmedVia string `json:"pickupConfirmedVia"`
+		Evidence           *struct {
+			WaitedMinutes *int `json:"waitedMinutes"`
+		} `json:"evidence"`
 	}
 	if err := json.Unmarshal(data, &d); err != nil || d.PlatformOrderID == "" || !knownStatus(d.Status) {
 		return nil //nolint:nilerr // malformed or unknown: nothing to apply
 	}
 
-	_, _, err := u.store.ApplyPOSStatus(ctx, d.PlatformOrderID, entity.POSOrderState{
+	st := entity.POSOrderState{
 		POSOrderID: d.POSOrderID, Status: d.Status, Version: version, PrepMinutes: d.PrepTimeMinutes, Reason: d.Reason,
-	}, u.notification)
+		ReasonCode: d.ReasonCode, CancelledBy: d.CancelledBy, PickupVia: d.PickupConfirmedVia,
+	}
+	if d.Evidence != nil {
+		st.WaitedMinutes = d.Evidence.WaitedMinutes
+	}
+
+	_, _, err := u.store.ApplyPOSStatus(ctx, d.PlatformOrderID, st, u.notification)
 	if errors.Is(err, entity.ErrNotFound) {
 		return nil
 	}
@@ -790,6 +839,10 @@ func (u *UseCase) notification(o *entity.Order) *entity.Notification {
 	case entity.OrderReady:
 		n.Title = "Pesanan siap diambil"
 		n.Body = "Ambil pesananmu di " + o.OutletName
+
+		if o.PickupCode != nil && *o.PickupCode != "" {
+			n.Body += ". Tunjukkan kode " + *o.PickupCode
+		}
 	case entity.OrderRejected:
 		n.Title = "Pesanan ditolak"
 		n.Body = o.OutletName + " tidak dapat menerima pesananmu"
@@ -798,6 +851,19 @@ func (u *UseCase) notification(o *entity.Order) *entity.Notification {
 			n.Body += ": " + *o.Reason
 		}
 	case entity.OrderCancelled:
+		if o.CloseReasonCode != nil && *o.CloseReasonCode == entity.ReasonNoShow {
+			n.Title = "Pesanan tidak diambil"
+			n.Body = o.OutletName + " sudah menyiapkan pesananmu, tetapi tidak diambil."
+
+			if o.PaymentMode == entity.PaymentModeOnline {
+				n.Body += " Pembayaran online tidak dikembalikan otomatis. Jika ini keliru, hubungi kami."
+			} else {
+				n.Body += " Jika ini keliru, hubungi kami."
+			}
+
+			break
+		}
+
 		n.Title = "Pesanan dibatalkan"
 		n.Body = o.OutletName + " membatalkan pesananmu"
 
@@ -859,4 +925,12 @@ func (u *UseCase) OutletReviews(ctx context.Context, outletID string, before *ti
 	}
 
 	return u.store.OutletReviews(ctx, outletID, before, min(limit, 50))
+}
+
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+
+	return *s
 }

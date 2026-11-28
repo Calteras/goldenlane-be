@@ -8,6 +8,7 @@ import (
 
 	"github.com/Calteras/streetfood-customer-api/internal/entity"
 	"github.com/Calteras/streetfood-customer-api/internal/usecase/merchant"
+	"github.com/Calteras/streetfood-customer-api/internal/usecase/trust"
 	"github.com/Calteras/streetfood-customer-api/pkg/logger"
 )
 
@@ -20,15 +21,24 @@ type Merchants interface {
 	Connect(ctx context.Context, in merchant.Registration) (entity.Merchant, bool, error)
 }
 
+// Trust is what the operator can read about customers' trust (read only for now).
+type Trust interface {
+	Report(ctx context.Context, customerID string) (trust.Report, error)
+	Distribution(ctx context.Context) (trust.Distribution, error)
+}
+
 type adminRoutes struct {
 	uc Merchants
+	tr Trust
 	l  logger.Interface
 }
 
 // NewAdminRoutes registers the operator endpoints. g must already require the operator token.
-func NewAdminRoutes(g fiber.Router, uc Merchants, pay Gateways, l logger.Interface) {
-	r := &adminRoutes{uc: uc, l: l}
+func NewAdminRoutes(g fiber.Router, uc Merchants, pay Gateways, tr Trust, l logger.Interface) {
+	r := &adminRoutes{uc: uc, tr: tr, l: l}
 	newGatewayRoutes(g, pay, l)
+	g.Get("/customers/:id/trust", r.customerTrust)
+	g.Get("/trust/distribution", r.trustDistribution)
 	g.Post("/merchants", r.register)
 	g.Get("/merchants", r.list)
 	g.Delete("/merchants/:id", r.suspend)
@@ -105,4 +115,32 @@ func (r *adminRoutes) updateLink(c *fiber.Ctx) error {
 	}
 
 	return ok(c, m)
+}
+
+// customerTrust shows where one customer stands and the events behind it: the score, the tier,
+// the readable reasons, what the policy would do, and the latest events. Computing it also
+// refreshes the stored profile.
+func (r *adminRoutes) customerTrust(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return fail(r.l, entity.ErrNotFound)
+	}
+
+	report, err := r.tr.Report(c.UserContext(), id.String())
+	if err != nil {
+		return fail(r.l, err)
+	}
+
+	return ok(c, report)
+}
+
+// trustDistribution shows how customers spread over the tiers, so thresholds are chosen on real
+// data before any of them is enforced.
+func (r *adminRoutes) trustDistribution(c *fiber.Ctx) error {
+	d, err := r.tr.Distribution(c.UserContext())
+	if err != nil {
+		return fail(r.l, err)
+	}
+
+	return ok(c, d)
 }

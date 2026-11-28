@@ -84,7 +84,7 @@ func DBWithCommits(t *testing.T) (*pgxpool.Pool, *postgres.CommitTracer) {
 	_, err = pool.Exec(context.Background(), `
 		TRUNCATE integration_inbox, menu_items, outlet_menus, outlet_hours, outlets,
 		  merchant_links, merchants, devices, external_identities, customers,
-		  checkouts, merchant_orders, merchant_order_items, notification_outbox, reviews CASCADE`)
+		  checkouts, merchant_orders, merchant_order_items, notification_outbox, reviews, trust_config CASCADE`)
 	if err != nil {
 		t.Fatalf("truncate: %v", err)
 	}

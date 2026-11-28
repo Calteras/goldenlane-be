@@ -237,6 +237,26 @@ connected again), replace its credentials instead:
 `PUT /v1/admin/merchants/<id>/link` with `keyId`, `secret` and `posBaseUrl`. In development `localhost` and `127.0.0.1` are accepted; anything else must be `https`
 and listed in `POS_ALLOWED_HOSTS`.
 
+### Customer trust (shadow mode)
+
+The platform records how customers behave (orders completed, no-shows, late cancels, refused
+payments) and scores them, so vendors and operators can tell reliable customers from risky ones.
+**Nothing is enforced yet:** a score never blocks an order. The plan and the sprints are in
+[`docs/CUSTOMER_TRUST_AND_SAFETY_PLAN.md`](docs/CUSTOMER_TRUST_AND_SAFETY_PLAN.md).
+
+- Events land in `customer_trust_events` as orders end. Scores and tiers are computed from them
+  (`internal/usecase/trust`), refreshed at every checkout and by an hourly worker.
+- Operators read them: `GET /v1/admin/customers/<id>/trust` (score, tier, reasons, events) and
+  `GET /v1/admin/trust/distribution` (how customers spread over the tiers). Use the second to pick
+  thresholds before anything is enforced.
+- The weights and thresholds are defaults in code. To change them without a deploy, add rows to the
+  `trust_config` table: `weights` (`{"NO_SHOW": {"points": 30, "halfLifeDays": 60}}`) and `settings`
+  (`{"watchAt": 20, "restrictedAt": 50}`). A row that does not parse is ignored.
+- A prepaid order the vendor marks as a no-show is **not refunded automatically**: the vendor made the
+  food. A person can still decide otherwise.
+- Every order gets a four digit pickup code the customer shows at the cart. The POS finds the order
+  by it, and a handover against it is recorded as proof the customer came.
+
 ### D. See it, order from it
 
 ```sh
@@ -533,8 +553,8 @@ built once from one commit (step 2):
 
 | Image | Dockerfile target | Job |
 |---|---|---|
-| `streetfood-api:<tag>` | `production` | serves the API on `HTTP_PORT` |
-| `streetfood-migrate:<tag>` | `migration` | applies `migrations/` and exits; the API never migrates itself |
+| `goldenlane-api:<tag>` | `production` | serves the API on `HTTP_PORT` |
+| `goldenlane-migrate:<tag>` | `migration` | applies `migrations/` and exits; the API never migrates itself |
 
 The two environments differ only in their configuration and their database. Use a separate Neon
 database for each, and never point staging at the production database.
@@ -580,14 +600,14 @@ export IMAGE_TAG="$(git rev-parse --short=12 HEAD)"
 export REGISTRY="dolanddev"          # your Docker Hub user or organisation, or a private registry
 
 docker build --target production --build-arg APP_VERSION="$IMAGE_TAG" \
-  -t "$REGISTRY/streetfood-api:$IMAGE_TAG" .
+  -t "$REGISTRY/goldenlane-api:$IMAGE_TAG" .
 
 docker build --target migration \
-  -t "$REGISTRY/streetfood-migrate:$IMAGE_TAG" .
+  -t "$REGISTRY/goldenlane-migrate:$IMAGE_TAG" .
 
 docker login                         # once; add the registry host for a private registry
-docker push "$REGISTRY/streetfood-api:$IMAGE_TAG"
-docker push "$REGISTRY/streetfood-migrate:$IMAGE_TAG"
+docker push "$REGISTRY/goldenlane-api:$IMAGE_TAG"
+docker push "$REGISTRY/goldenlane-migrate:$IMAGE_TAG"
 ```
 
 Build from a clean checkout of the commit you mean to release (`git status` shows nothing). If you
@@ -597,17 +617,17 @@ build on an Apple Silicon Mac for a Linux amd64 server, add `--platform linux/am
 For stronger immutability, deploy registry digests instead of tags. Read them after the push:
 
 ```sh
-docker inspect --format '{{index .RepoDigests 0}}' "$REGISTRY/streetfood-api:$IMAGE_TAG"
-docker inspect --format '{{index .RepoDigests 0}}' "$REGISTRY/streetfood-migrate:$IMAGE_TAG"
-# dolanddev/streetfood-api@sha256:…
+docker inspect --format '{{index .RepoDigests 0}}' "$REGISTRY/goldenlane-api:$IMAGE_TAG"
+docker inspect --format '{{index .RepoDigests 0}}' "$REGISTRY/goldenlane-migrate:$IMAGE_TAG"
+# dolanddev/goldenlane-api@sha256:…
 ```
 
 **Where the values of `APP_IMAGE` and `MIGRATION_IMAGE` come from:** these are the two image
 references you just pushed, in `.env.<stage>`:
 
 ```sh
-APP_IMAGE=dolanddev/streetfood-api:0123456789ab              # or ...@sha256:<digest>
-MIGRATION_IMAGE=dolanddev/streetfood-migrate:0123456789ab    # same commit as APP_IMAGE
+APP_IMAGE=dolanddev/goldenlane-api:0123456789ab              # or ...@sha256:<digest>
+MIGRATION_IMAGE=dolanddev/goldenlane-migrate:0123456789ab    # same commit as APP_IMAGE
 ```
 
 The same two lines go into `.env.staging` first and, once staging is verified, into `.env.production`.
@@ -658,12 +678,56 @@ and gateway key is unreadable.
 (project `streetfood-<stage>`). It stops early when a secret file is missing, readable by every user,
 or not readable by uid 1000 (checked on Linux; Docker Desktop does not enforce host permissions).
 
+#### Changing a value later
+
+Nothing here is locked for good. The `chmod 400` only makes the secret files read-only
+(and, on Linux, `chown 1000:1000` hands them to the container user) so a stray process or user
+cannot read them. You can edit them whenever you need to.
+
+**Non-secret settings** (`.env.<stage>`: image tags, origins, Firebase project, POS hosts, public
+URL). This file is never locked. Edit it normally, then recreate the API:
+
+```sh
+nano .env.staging
+sh scripts/compose.sh staging up -d app
+```
+
+**Secrets** (`secrets/<stage>/app.env`, `migration.env`). Make the file writable, edit, lock it again,
+then recreate the API. Docker reads secret files when the container is created, so a running
+container does not see the change until `up -d`.
+
+```sh
+# 1. Unlock. On Linux the files belong to uid 1000, so use sudo unless you are uid 1000.
+sudo chown "$(id -u)" secrets/staging/app.env      # Linux only; skip on macOS
+chmod u+w secrets/staging/app.env
+
+# 2. Edit (for example PG_URL, or add a line such as FCM_SERVICE_ACCOUNT_FILE=...).
+nano secrets/staging/app.env
+
+# 3. Lock it again.
+chmod 400 secrets/staging/app.env
+sudo chown 1000:1000 secrets/staging/app.env       # Linux only
+
+# 4. Apply. app.env is read by the API; migration.env only when you run the migration.
+sh scripts/compose.sh staging up -d app
+```
+
+`scripts/compose.sh` refuses to start if a secret file is readable by every user or not readable by
+uid 1000, so if you forget step 3 it tells you.
+
+Things not to change:
+
+- `ENCRYPTION_KEY` once merchants are registered. Stored POS secrets and gateway keys are encrypted
+  with it, and a new key makes them unreadable. Back it up.
+- `new-secrets.sh` never overwrites an existing file, so it cannot be used to reset a value. To
+  regenerate `ADMIN_API_TOKEN` alone, replace that line with the output of `openssl rand -hex 32`.
+
 #### What to put in `.env.<stage>`
 
 | Setting | Required | What to fill | Used for |
 |---|---|---|---|
-| `APP_IMAGE` | yes | The API image you pushed in step 2, for example `dolanddev/streetfood-api:0123456789ab` (or `@sha256:` digest). Must not be a moving tag such as `latest` | The container the `app` service runs |
-| `MIGRATION_IMAGE` | yes | The migration image from the **same commit** as `APP_IMAGE`, for example `dolanddev/streetfood-migrate:0123456789ab` | The one-off `migrate` job (step 4) |
+| `APP_IMAGE` | yes | The API image you pushed in step 2, for example `dolanddev/goldenlane-api:0123456789ab` (or `@sha256:` digest). Must not be a moving tag such as `latest` | The container the `app` service runs |
+| `MIGRATION_IMAGE` | yes | The migration image from the **same commit** as `APP_IMAGE`, for example `dolanddev/goldenlane-migrate:0123456789ab` | The one-off `migrate` job (step 4) |
 | `APP_SECRETS_PATH` | yes | Path to the API's secret file, `./secrets/<stage>/app.env` (relative to the repo root, or absolute) | Mounted as the Docker secret `app_env` |
 | `MIGRATION_SECRETS_PATH` | yes | Path to the migration's secret file, `./secrets/<stage>/migration.env` | Mounted as the Docker secret `migration_env` |
 | `APP_BIND_ADDRESS` | no, `127.0.0.1` | The host address the port is published on. Keep `127.0.0.1` when a reverse proxy on the same host serves the public traffic. Use `0.0.0.0` only if nothing in front runs on this host (then firewall it) | Which network interfaces can reach the container |

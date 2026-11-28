@@ -22,6 +22,7 @@ import (
 	"github.com/Calteras/streetfood-customer-api/internal/usecase/merchant"
 	"github.com/Calteras/streetfood-customer-api/internal/usecase/ordering"
 	"github.com/Calteras/streetfood-customer-api/internal/usecase/payment"
+	"github.com/Calteras/streetfood-customer-api/internal/usecase/trust"
 	"github.com/Calteras/streetfood-customer-api/pkg/httpserver"
 	"github.com/Calteras/streetfood-customer-api/pkg/logger"
 	"github.com/Calteras/streetfood-customer-api/pkg/postgres"
@@ -132,6 +133,8 @@ func Run(cfg *config.Config) {
 	}, l)
 
 	orders := ordering.New(store, posClient, pay, box, l)
+	scorer := trust.New(store, l)
+	orders.SetTrust(scorer)
 	pay.SetOrderNotifier(orders.Notification)
 	integ.SetOrderMirror(orders)
 
@@ -151,7 +154,7 @@ func Run(cfg *config.Config) {
 
 	server := httpserver.New(httpserver.Port(cfg.HTTP.Port))
 	httpctl.NewRouter(server.App, cfg, l, httpctl.Dependencies{
-		Auth: ident, Events: integ, Discovery: disc, Profiles: ident, Merchants: merch, Orders: orders, Hub: hub, Payments: pay,
+		Auth: ident, Events: integ, Discovery: disc, Profiles: ident, Merchants: merch, Orders: orders, Hub: hub, Payments: pay, Trust: scorer,
 	})
 
 	notifier := ordering.NewNotifier(store, pusher, l)
@@ -173,6 +176,8 @@ func Run(cfg *config.Config) {
 		poller.New("payment check", pay.Poll, sweep, l, poller.WithDue(payDue)),
 		poller.New("payment expiry", pay.ExpireUnpaid, sweep, l, poller.WithDue(store.UnpaidDue)),
 		poller.New("refunds", pay.Refund, sweep, l, poller.WithDue(store.RefundDue)),
+		// Scores customers whose events changed. A scheduled read: no deadline to wake on.
+		poller.New("trust profiles", scorer.Sweep, sweep, l),
 	}
 
 	// The reconcile worker does not wake on commits: it is a scheduled read of the POS.

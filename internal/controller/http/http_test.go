@@ -26,6 +26,7 @@ import (
 	"github.com/Calteras/streetfood-customer-api/internal/usecase/merchant"
 	"github.com/Calteras/streetfood-customer-api/internal/usecase/ordering"
 	"github.com/Calteras/streetfood-customer-api/internal/usecase/payment"
+	"github.com/Calteras/streetfood-customer-api/internal/usecase/trust"
 	"github.com/Calteras/streetfood-customer-api/pkg/httpserver"
 	"github.com/Calteras/streetfood-customer-api/pkg/postgres"
 	"github.com/Calteras/streetfood-customer-api/pkg/signing"
@@ -102,7 +103,7 @@ func newAPIWith(t *testing.T, opt apiOptions) *api {
 	server := httpserver.New(serverOpts...)
 	httpctl.NewRouter(server.App, cfg, testutil.SilentLogger{}, httpctl.Dependencies{
 		Auth: ident, Events: e.Integration, Discovery: discovery.New(e.Store), Profiles: ident, Merchants: merch,
-		Orders: orders, Hub: hub, Payments: pay, Streaming: opt.streaming,
+		Orders: orders, Hub: hub, Payments: pay, Trust: trust.New(e.Store, testutil.SilentLogger{}), Streaming: opt.streaming,
 	})
 
 	return &api{t: t, e: e, app: server.App, server: server, pos: fake, orders: orders, pay: pay, gw: gw, hub: hub}

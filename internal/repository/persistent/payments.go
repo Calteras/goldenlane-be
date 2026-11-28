@@ -523,7 +523,7 @@ func (s *Store) ExpireUnpaid(ctx context.Context, orderID string, notify Notify)
 	err := s.inTx(ctx, func(tx txn) error {
 		tag, err := tx.Exec(ctx, `
 			UPDATE merchant_orders SET status = 'EXPIRED', error_code = $2, reason = 'Payment was not completed in time',
-			  updated_at = now()
+			  cancelled_by = 'SYSTEM', close_reason_code = 'PAYMENT_EXPIRED', updated_at = now()
 			WHERE id = $1 AND status = 'UNPAID' AND payment_deadline <= now()`, orderID, entity.ErrorPaymentExpired)
 		if err != nil {
 			return err
@@ -534,6 +534,19 @@ func (s *Store) ExpireUnpaid(ctx context.Context, orderID string, notify Notify)
 		}
 
 		done = true
+
+		var customer, outlet, merchant string
+		if err := tx.QueryRow(ctx, `SELECT customer_id, outlet_id, merchant_id FROM merchant_orders WHERE id = $1`, orderID).
+			Scan(&customer, &outlet, &merchant); err != nil {
+			return err
+		}
+
+		if err := insertTrustEvent(ctx, tx, entity.TrustEvent{
+			CustomerID: customer, Type: entity.EventPaymentExpired, Source: entity.SourceSystem,
+			OrderID: &orderID, OutletID: &outlet, MerchantID: &merchant, CreatedAt: time.Now(),
+		}); err != nil {
+			return err
+		}
 
 		if closed, err = closeAttempts(ctx, tx, orderID); err != nil {
 			return err
@@ -554,7 +567,8 @@ func (s *Store) CancelUnpaid(ctx context.Context, customerID, orderID string, no
 
 	err := s.inTx(ctx, func(tx txn) error {
 		tag, err := tx.Exec(ctx, `
-			UPDATE merchant_orders SET status = 'CANCELLED', reason = 'Cancelled by customer', updated_at = now()
+			UPDATE merchant_orders SET status = 'CANCELLED', reason = 'Cancelled by customer',
+			  cancelled_by = 'CUSTOMER', close_reason_code = 'CUSTOMER_CANCELLED', updated_at = now()
 			WHERE id = $1 AND customer_id = $2 AND status = 'UNPAID'`, orderID, customerID)
 		if err != nil {
 			return err
@@ -565,6 +579,19 @@ func (s *Store) CancelUnpaid(ctx context.Context, customerID, orderID string, no
 		}
 
 		done = true
+
+		var outlet, merchant string
+		if err := tx.QueryRow(ctx, `SELECT outlet_id, merchant_id FROM merchant_orders WHERE id = $1`, orderID).
+			Scan(&outlet, &merchant); err != nil {
+			return err
+		}
+
+		if err := insertTrustEvent(ctx, tx, entity.TrustEvent{
+			CustomerID: customerID, Type: entity.EventCancelUnpaid, Source: entity.SourceSystem,
+			OrderID: &orderID, OutletID: &outlet, MerchantID: &merchant, CreatedAt: time.Now(),
+		}); err != nil {
+			return err
+		}
 
 		if closed, err = closeAttempts(ctx, tx, orderID); err != nil {
 			return err
@@ -627,7 +654,9 @@ func (s *Store) ClaimRefunds(ctx context.Context, limit int, lease time.Duration
 			SELECT p.id FROM payments p JOIN merchant_orders o ON o.id = p.order_id
 			WHERE p.status = 'PAID' AND (p.refund_status IS NULL OR p.refund_status = 'PENDING')
 			  AND p.refund_available_at <= now() AND (p.refund_lease_until IS NULL OR p.refund_lease_until < now())
-			  AND (o.status IN ('CANCELLED', 'REJECTED', 'EXPIRED', 'SUBMIT_FAILED')
+			  AND ((o.status IN ('CANCELLED', 'REJECTED', 'EXPIRED', 'SUBMIT_FAILED')
+			        -- A no-show is not refunded on its own: the vendor made the food (policy decision 2).
+			        AND NOT (o.status = 'CANCELLED' AND o.close_reason_code = 'NO_SHOW'))
 			       OR EXISTS (SELECT 1 FROM payments q WHERE q.order_id = p.order_id AND q.status = 'PAID' AND q.id <> p.id
 			                  AND (q.paid_at, q.id) < (p.paid_at, p.id)))
 			ORDER BY p.paid_at FOR UPDATE OF p SKIP LOCKED LIMIT $1

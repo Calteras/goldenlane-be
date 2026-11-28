@@ -225,11 +225,16 @@ paths:
     get:
       tags: [Orders]
       summary: One order with its status, pricing and items
+      description: |
+        `pickupCode` is four digits to show at the cart so the vendor can find the order; it is
+        present only while the order is open. A finished order says why in `closeReasonCode`
+        (`NO_SHOW`: the vendor prepared it and it was not picked up; an online payment is not
+        refunded on its own then), and `readyAt` is when it became ready.
       security: [{ firebase: [] }]
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
-        '200': { description: The order }
+        '200': { description: 'The order, with `pickupCode`, `readyAt` and `closeReasonCode`' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
   /v1/orders/{id}/cancel:
@@ -425,6 +430,29 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { description: Another merchant already uses this key id }
         '422': { description: 'Invalid (`MERCHANT_INVALID`) or the POS rejected the credentials (`LINK_UNVERIFIED`)' }
+  /v1/admin/customers/{id}/trust:
+    get:
+      tags: [Operator]
+      summary: Where one customer stands, and the events behind it
+      description: |
+        The trust score, tier (`NEW`, `GOOD`, `WATCH`, `RESTRICTED`), the readable reasons, what
+        the policy would do and the latest events. Shadow mode: nothing is enforced yet, and
+        reading it refreshes the stored profile.
+      security: [{ operator: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        '200': { description: 'The report: `profile`, `policy`, `timeline`, `config`' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/admin/trust/distribution:
+    get:
+      tags: [Operator]
+      summary: How customers spread over the trust tiers
+      description: Scores every customer with events, without storing anything, so thresholds are chosen on real data.
+      security: [{ operator: [] }]
+      responses:
+        '200': { description: 'Customers per tier, score percentiles and how many a tier would limit' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /v1/admin/merchants/{id}/fees/settle:
     post:
       tags: [Operator]

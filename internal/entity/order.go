@@ -88,6 +88,15 @@ type Order struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	CompletedAt    *time.Time
+	// ReadyAt is when the platform learned the order was ready (its own clock).
+	ReadyAt         *time.Time
+	NoShowAt        *time.Time
+	CancelledBy     *string
+	CloseReasonCode *string
+	// PickupCode is what the customer shows to find the order; PickupVia says how it was handed over.
+	PickupCode        *string
+	PickupConfirmedAt *time.Time
+	PickupVia         *string
 }
 
 // LineProblem is why one line cannot be ordered, using the POS's own codes.
@@ -270,6 +279,13 @@ type POSOrderState struct {
 	AcceptBy    *time.Time
 	PrepMinutes *int
 	Reason      *string
+	// What the POS says about how the order ended (empty from an older POS).
+	ReasonCode    string
+	CancelledBy   string
+	PickupVia     string
+	WaitedMinutes *int
+	// ReadyAtPOS is the vendor's own claim of when the order was ready, kept as evidence.
+	ReadyAtPOS *time.Time
 }
 
 // Notification is a push message for a customer.
