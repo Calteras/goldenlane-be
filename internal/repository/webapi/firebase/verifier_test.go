@@ -102,6 +102,29 @@ func TestVerify(t *testing.T) {
 		require.Empty(t, got.Phone)
 	})
 
+	t.Run("a Google sign-in carries a verified email and picture", func(t *testing.T) {
+		got, err := v.Verify(ctx, good.token(t, rs, claims(jwt.MapClaims{
+			"phone_number": nil, "email": "rina@example.com", "email_verified": true,
+			"picture":  "https://lh3.googleusercontent.com/a/rina",
+			"firebase": map[string]any{"sign_in_provider": "google.com"},
+		})))
+		require.NoError(t, err)
+		require.Equal(t, "rina@example.com", got.Email)
+		require.True(t, got.EmailVerified)
+		require.Equal(t, "google.com", got.SignInMethod)
+		require.Equal(t, "https://lh3.googleusercontent.com/a/rina", got.Picture)
+	})
+
+	t.Run("an email sign-up is not verified until the link is used", func(t *testing.T) {
+		got, err := v.Verify(ctx, good.token(t, rs, claims(jwt.MapClaims{
+			"phone_number": nil, "email": "rina@example.com", "email_verified": false,
+			"firebase": map[string]any{"sign_in_provider": "password"},
+		})))
+		require.NoError(t, err)
+		require.False(t, got.EmailVerified)
+		require.Equal(t, "password", got.SignInMethod)
+	})
+
 	for name, tok := range map[string]string{
 		"wrong audience":        good.token(t, rs, claims(jwt.MapClaims{"aud": "another-project"})),
 		"wrong issuer":          good.token(t, rs, claims(jwt.MapClaims{"iss": "https://securetoken.google.com/another"})),

@@ -45,9 +45,15 @@ func New(ctx context.Context, jwksURL, projectID, issuer string) (*Verifier, err
 
 type claims struct {
 	jwt.RegisteredClaims
-	Phone    string `json:"phone_number"`
-	Name     string `json:"name"`
-	AuthTime int64  `json:"auth_time"`
+	Phone         string `json:"phone_number"`
+	Name          string `json:"name"`
+	Email         string `json:"email"`
+	EmailVerified bool   `json:"email_verified"`
+	Picture       string `json:"picture"`
+	AuthTime      int64  `json:"auth_time"`
+	Firebase      struct {
+		SignInProvider string `json:"sign_in_provider"`
+	} `json:"firebase"`
 }
 
 // Verify returns the claims of a valid token.
@@ -71,5 +77,9 @@ func (v *Verifier) Verify(_ context.Context, token string) (identity.Claims, err
 		return identity.Claims{}, ErrInvalidToken
 	}
 
-	return identity.Claims{UserID: c.Subject, Phone: c.Phone, Name: c.Name}, nil
+	return identity.Claims{
+		UserID: c.Subject, Phone: c.Phone, Name: c.Name,
+		Email: c.Email, EmailVerified: c.EmailVerified, Picture: c.Picture,
+		SignInMethod: c.Firebase.SignInProvider,
+	}, nil
 }

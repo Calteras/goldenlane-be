@@ -7,11 +7,11 @@ import (
 	"github.com/Calteras/streetfood-customer-api/internal/entity"
 )
 
-const customerCols = `c.id, c.phone, c.name, c.avatar_url, c.status, c.created_at`
+const customerCols = `c.id, c.phone, c.email, c.name, c.avatar_url, c.status, c.created_at`
 
 // FindOrCreateCustomer returns the customer of a sign-in identity, creating it on first
 // sight. Two requests racing on a first sign-in end up with one customer.
-func (s *Store) FindOrCreateCustomer(ctx context.Context, provider, providerUserID, phone, name string) (entity.Customer, error) {
+func (s *Store) FindOrCreateCustomer(ctx context.Context, provider, providerUserID string, profile entity.SignInProfile) (entity.Customer, error) {
 	var c entity.Customer
 
 	find := func(tx txn) error {
@@ -19,7 +19,7 @@ func (s *Store) FindOrCreateCustomer(ctx context.Context, provider, providerUser
 			SELECT `+customerCols+` FROM customers c
 			JOIN external_identities e ON e.customer_id = c.id
 			WHERE e.provider = $1 AND e.provider_user_id = $2`, provider, providerUserID,
-		).Scan(&c.ID, &c.Phone, &c.Name, &c.AvatarURL, &c.Status, &c.CreatedAt)
+		).Scan(&c.ID, &c.Phone, &c.Email, &c.Name, &c.AvatarURL, &c.Status, &c.CreatedAt)
 	}
 
 	err := s.inTx(ctx, func(tx txn) error {
@@ -29,13 +29,15 @@ func (s *Store) FindOrCreateCustomer(ctx context.Context, provider, providerUser
 		}
 
 		if err := find(tx); err == nil {
-			return nil
+			return fillBlanks(ctx, tx, &c, profile)
 		}
 
 		if err := tx.QueryRow(ctx, `
-			INSERT INTO customers (phone, name) VALUES (NULLIF($1, ''), $2)
-			RETURNING `+`id, phone, name, avatar_url, status, created_at`, phone, name,
-		).Scan(&c.ID, &c.Phone, &c.Name, &c.AvatarURL, &c.Status, &c.CreatedAt); err != nil {
+			INSERT INTO customers (phone, email, name, avatar_url)
+			VALUES (NULLIF($1, ''), NULLIF($2, ''), $3, NULLIF($4, ''))
+			RETURNING id, phone, email, name, avatar_url, status, created_at`,
+			profile.Phone, profile.Email, profile.Name, profile.AvatarURL,
+		).Scan(&c.ID, &c.Phone, &c.Email, &c.Name, &c.AvatarURL, &c.Status, &c.CreatedAt); err != nil {
 			return err
 		}
 
@@ -52,11 +54,33 @@ func (s *Store) FindOrCreateCustomer(ctx context.Context, provider, providerUser
 	return c, nil
 }
 
+// fillBlanks completes an existing account with what a later sign-in knows (a phone linked
+// afterwards, a first name) without ever replacing what the customer already has or chose.
+func fillBlanks(ctx context.Context, tx txn, c *entity.Customer, p entity.SignInProfile) error {
+	needs := (c.Phone == nil && p.Phone != "") || (c.Email == nil && p.Email != "") ||
+		(c.Name == "" && p.Name != "") || (c.AvatarURL == nil && p.AvatarURL != "")
+	if !needs || c.Status != "active" {
+		return nil
+	}
+
+	return tx.QueryRow(ctx, `
+		UPDATE customers SET
+			phone = COALESCE(phone, NULLIF($2, '')),
+			email = COALESCE(email, NULLIF($3, '')),
+			name = CASE WHEN name = '' THEN $4 ELSE name END,
+			avatar_url = COALESCE(avatar_url, NULLIF($5, '')),
+			updated_at = now()
+		WHERE id = $1
+		RETURNING id, phone, email, name, avatar_url, status, created_at`,
+		c.ID, p.Phone, p.Email, p.Name, p.AvatarURL,
+	).Scan(&c.ID, &c.Phone, &c.Email, &c.Name, &c.AvatarURL, &c.Status, &c.CreatedAt)
+}
+
 // GetCustomer returns a customer by id.
 func (s *Store) GetCustomer(ctx context.Context, id string) (entity.Customer, error) {
 	var c entity.Customer
 
-	err := s.pool.QueryRow(ctx, `SELECT `+customerCols+` FROM customers c WHERE c.id = $1`, id).Scan(&c.ID, &c.Phone, &c.Name, &c.AvatarURL, &c.Status, &c.CreatedAt)
+	err := s.pool.QueryRow(ctx, `SELECT `+customerCols+` FROM customers c WHERE c.id = $1`, id).Scan(&c.ID, &c.Phone, &c.Email, &c.Name, &c.AvatarURL, &c.Status, &c.CreatedAt)
 	if err != nil {
 		return entity.Customer{}, notFound(err)
 	}
@@ -72,7 +96,7 @@ func (s *Store) UpdateCustomer(ctx context.Context, id string, name, avatarURL *
 		UPDATE customers c SET name = COALESCE($2, c.name), avatar_url = COALESCE($3, c.avatar_url), updated_at = now()
 		WHERE c.id = $1 AND c.status = 'active'
 		RETURNING `+customerCols, id, name, avatarURL,
-	).Scan(&c.ID, &c.Phone, &c.Name, &c.AvatarURL, &c.Status, &c.CreatedAt)
+	).Scan(&c.ID, &c.Phone, &c.Email, &c.Name, &c.AvatarURL, &c.Status, &c.CreatedAt)
 	if err != nil {
 		return entity.Customer{}, notFound(err)
 	}

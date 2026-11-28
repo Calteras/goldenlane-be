@@ -31,6 +31,14 @@ type Claims struct {
 	UserID string
 	Phone  string
 	Name   string
+	// Email is the address on the token, EmailVerified whether the provider proved it.
+	// Google and Apple do; a password sign-up does only after the link in the mail is used.
+	Email         string
+	EmailVerified bool
+	Picture       string
+	// SignInMethod is how the customer proved who they are: phone, google.com, apple.com,
+	// password, and so on. Informational: every method yields the same kind of account.
+	SignInMethod string
 }
 
 // TokenVerifier checks a bearer token with the sign-in provider.
@@ -40,7 +48,7 @@ type TokenVerifier interface {
 
 // Store is what the use case needs from storage.
 type Store interface {
-	FindOrCreateCustomer(ctx context.Context, provider, providerUserID, phone, name string) (entity.Customer, error)
+	FindOrCreateCustomer(ctx context.Context, provider, providerUserID string, profile entity.SignInProfile) (entity.Customer, error)
 	GetCustomer(ctx context.Context, id string) (entity.Customer, error)
 	UpdateCustomer(ctx context.Context, id string, name, avatarURL *string) (entity.Customer, error)
 	DeleteCustomer(ctx context.Context, id string) error
@@ -145,7 +153,7 @@ func (u *UseCase) Authenticate(ctx context.Context, token string) (entity.Custom
 	if !ok {
 		var err error
 
-		if c, err = u.store.FindOrCreateCustomer(ctx, provider, claims.UserID, claims.Phone, claims.Name); err != nil {
+		if c, err = u.store.FindOrCreateCustomer(ctx, provider, claims.UserID, profileOf(claims)); err != nil {
 			return entity.Customer{}, err
 		}
 
@@ -157,6 +165,26 @@ func (u *UseCase) Authenticate(ctx context.Context, token string) (entity.Custom
 	}
 
 	return c, nil
+}
+
+// profileOf keeps an email only when the provider vouches for it, and an avatar only when
+// it is a link the app can show.
+func profileOf(c Claims) entity.SignInProfile {
+	p := entity.SignInProfile{Phone: c.Phone, Name: strings.TrimSpace(c.Name)}
+
+	if c.EmailVerified && len(c.Email) <= 254 {
+		p.Email = strings.ToLower(strings.TrimSpace(c.Email))
+	}
+
+	if strings.HasPrefix(c.Picture, "https://") && len(c.Picture) <= 500 {
+		p.AvatarURL = c.Picture
+	}
+
+	if len([]rune(p.Name)) > 80 {
+		p.Name = string([]rune(p.Name)[:80])
+	}
+
+	return p
 }
 
 // Me returns the customer's profile.

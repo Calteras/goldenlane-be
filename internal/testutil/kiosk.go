@@ -80,7 +80,7 @@ func (e *Env) PublishKiosk(t *testing.T) Kiosk {
 func (e *Env) Customer(t *testing.T, uid, name, phone string) entity.Customer {
 	t.Helper()
 
-	c, err := e.Store.FindOrCreateCustomer(e.Ctx, "firebase", uid, phone, name)
+	c, err := e.Store.FindOrCreateCustomer(e.Ctx, "firebase", uid, entity.SignInProfile{Phone: phone, Name: name})
 	require.NoError(t, err)
 
 	return c

@@ -529,6 +529,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         phone: { type: string, nullable: true }
+        email: { type: string, nullable: true, description: Only an address the sign-in provider verified }
         name: { type: string }
         avatarUrl: { type: string, nullable: true }
         status: { type: string, enum: [active, suspended, deleted] }

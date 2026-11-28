@@ -205,10 +205,20 @@ type MenuItem struct {
 type Customer struct {
 	ID        string    `json:"id"`
 	Phone     *string   `json:"phone"`
+	Email     *string   `json:"email"`
 	Name      string    `json:"name"`
 	AvatarURL *string   `json:"avatarUrl"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"createdAt"`
+}
+
+// SignInProfile is what a verified sign-in says about its user. Every field is optional:
+// phone sign-in has no email, and Apple may hide the name.
+type SignInProfile struct {
+	Phone     string
+	Email     string // only a verified address
+	Name      string
+	AvatarURL string
 }
 
 // Menu is a stored snapshot of an outlet's menu.
